@@ -1,0 +1,118 @@
+EDF6 Weapon Compendium
+======================
+
+Overlay dentro del juego con las 1564 armas: cuales tenes, cuales te faltan,
+donde farmear cada una y a que mision conviene ir.
+
+REQUISITO
+---------
+Necesita EDFModLoader instalado. Si en la carpeta del juego no hay un winmm.dll
+y una carpeta Mods, el plugin no se carga y no pasa nada.
+
+    https://github.com/BlueAmulet/EDFModLoader
+
+INSTALACION
+-----------
+Copiar la carpeta Mods de este paquete sobre la del juego, la que tiene el
+EDF6.exe. Queda asi:
+
+    EARTH DEFENSE FORCE 6\Mods\Plugins\EDF6Compendium.dll
+    EARTH DEFENSE FORCE 6\Mods\Compendium\weapons.tsv
+    EARTH DEFENSE FORCE 6\Mods\Compendium\missions.tsv
+    EARTH DEFENSE FORCE 6\Mods\Compendium\strats.tsv
+    EARTH DEFENSE FORCE 6\Mods\Compendium\config.ini
+
+USO
+---
+F1 abre y cierra el overlay, en el lobby o en mision.
+
+Las armas obtenidas se leen solas del save y se actualizan al volver de cada
+mision. Tambien se pueden marcar a mano con las casillas.
+
+El boton "export" vuelca la lista de obtenidas a obtenidas.txt, que es lo que
+leen los generadores del catalogo.
+
+WISHLIST
+--------
+El corazon de cada fila marca un arma como deseada, y tambien esta el mismo
+boton en el panel de abajo, sobre el arma seleccionada. La lista se guarda sola
+en Mods\Compendium\wishlist.txt.
+
+Sirve para dos cosas:
+  - el desplegable de filtro tiene una opcion "wishlist" que muestra solo las
+    marcadas;
+  - la pestana Farming tiene un modo "wishlist only" que da vuelta el calculo y
+    dice a que mision conviene ir para conseguir justo esas.
+
+AVISO DE DROPEO
+---------------
+Al volver de una mision el mod relee el save solo y te dice que juntaste, aunque
+tengas el overlay cerrado. Si algo de lo que cayo estaba en la wishlist salta un
+cartelito arriba a la derecha. La lista completa queda arriba del overlay hasta
+que le des "dismiss".
+
+QUE SE PUEDE FARMEAR Y QUE NO
+-----------------------------
+Hay armas que ninguna caja suelta nunca: son premio de mision o de DLC. El
+contador de cada clase las separa ("146 missing (117 farmable)") y el filtro
+tiene una opcion "missing & farmable" para no perder el tiempo buscandolas.
+
+Las cajas tampoco sortean sobre todo el catalogo: las misiones del juego base
+solo sueltan armas base, las de DLC1 suman las del MissionPack A y las de DLC2
+tambien las del B. La pestana Farming ya lo tiene en cuenta.
+
+CUANTAS CAJAS
+-------------
+Ademas del porcentaje por caja, Farming dice cuantas cajas hacen falta en
+promedio para una nueva y para todas las que te faltan de esa mision.
+
+SI NO ABRE CON F1
+-----------------
+El juego escribe Compendium.log al lado del EDF6.exe. La primera linea dice que
+build es, y despues el arranque de la tecla va numerado en etapas:
+
+    0.  sondeando: ...                 el bucle corre y espera la tecla
+    0b. el teclado SI responde: ...    el teclado llega al juego
+    1.  tecla detectada por ...        se leyo la tecla
+    2.  overlay -> abierto             se abrio
+    3.  primer frame ... dibujado      se dibujo
+
+El numero de la ULTIMA etapa que aparezca dice donde se corta:
+
+  - No existe el archivo
+        El plugin no se cargo. Falta el EDFModLoader, o el DLL no quedo en
+        Mods\Plugins. Revisar tambien ModLoader.log.
+
+  - Termina en "hooks instalados, esperando el primer frame"
+        Engancho el dibujado pero nunca llego un frame. Suele ser otro overlay
+        peleando por lo mismo: probar cerrando el de Steam, Discord, GeForce
+        Experience o MSI Afterburner.
+
+  - Llega a "0." pero nunca a "1."
+        Corre pero no le llega la tecla. Si ademas nunca aparece "0b.", algo se
+        esta quedando con el teclado antes que el juego. Si la linea "0." dice
+        "El juego NO lee el teclado", probar otra tecla en config.ini: por
+        ejemplo tecla=0x71 para F2, o tecla=0x2D para Insert.
+
+  - Llega a "1." pero nunca a "2."
+        Lee la tecla y algo descarta el toggle. La propia linea "2." explica por
+        que si fue por el anti-rebote.
+
+  - Llega a "2." pero nunca a "3."
+        El overlay abre y no se dibuja. La linea "3." dice si falta imgui o el
+        render target. Probar en ventana o borderless en vez de pantalla
+        completa exclusiva.
+
+LA TECLA SE BUSCA POR TRES CAMINOS
+----------------------------------
+Segun la maquina puede fallar cualquiera de los tres, asi que se prueban todos:
+el sondeo directo, el mensaje de ventana, y la lectura del teclado que hace el
+propio juego. La linea "1." dice cual funciono. Para comprobar que los de
+respaldo andan, poner sondeo=0 en config.ini y ver que el overlay siga abriendo.
+
+CREDITOS
+--------
+Tabla de dropeo por mision: Beardmo's EDF6 Equipment Farming Tool and Inventory
+Tracker (spreadsheet publico).
+Descifrado del save: algoritmo de Quarri6343, publicado en el EDFSaveEditor de
+FevGrave.

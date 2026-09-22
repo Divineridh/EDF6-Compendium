@@ -1,0 +1,63 @@
+# Community farming strategies shown in the Strats tab.
+#
+# Format: one block per strategy. First line is the header, second line is the
+# title, everything after that is the body until a blank line.
+#
+#   == mission: 108 | difficulty: Inferno | class: any | source: <url>
+#   Short title
+#   Body text, as many lines as you want.
+#
+# "mission" takes a mission number, or "any" for general advice.
+#
+# NOTE: mission numbers are checked against the game's own mission table, but the
+# YIELDS each guide claims (armor per hour and so on) are not verified by us.
+# They are recorded as reported, with the source.
+#
+# The overlay draws with a western font: Japanese text will show up as boxes.
+# Translate or summarise when adding entries from Japanese guides.
+
+== mission: 108 | difficulty: Inferno | class: any | source: https://gameannaijo.com/edf6_kasegi/
+Tactical Aircraft Operation - the classic Inferno weapon farm
+A large battle where EDF NPCs clash with an enemy army. The friendly units are
+very strong, so you can stay behind the tanks, let them do the killing, and
+collect what drops.
+Japanese guides call this the gateway mission for farming top-level weapons.
+
+== mission: 36 | difficulty: Easy | class: any | source: https://gameannaijo.com/edf6_armor/
+Final Resistance - armor farm with endless enemies
+Enemies keep spawning forever, so the mission never ends on its own and you can
+keep collecting armor crates. Guides recommend running it on EASY.
+This is the one usually mentioned for idle or low-effort armor farming.
+
+== mission: 35 | difficulty: any | class: any | source: https://gameline.jp/edf6/kasegi/
+The Crumbling Town - fast, clean loops
+Only green ants spawn, so there is nothing unusual to deal with. It repeats
+quickly and predictably, which is what matters when you care about runs per
+hour rather than difficulty.
+
+== mission: 117 | difficulty: any | class: Wing Diver | source: https://steamcommunity.com/app/2291060/discussions/0/4766584664415927379/
+Base 228 in Peril - pylons, with Wing Diver
+From the Steam discussion: destroy one pylon to trigger the five-pylon stage,
+keep two or three of them close, and let the NPCs kill the ants.
+The poster reports around 1000 armor per hour. Not verified by us.
+
+== mission: 136 | difficulty: Easy | class: Ranger | source: https://gameranx.com/features/id/505186/article/edf6-8-best-levels-to-farm-inferno-weapons-armor/
+The Giant God Comes Crashing - armor crates on Easy
+Gameranx reports roughly 1000 armor crates per hour with Ranger on Easy
+difficulty. Not verified by us.
+
+== mission: any | difficulty: any | class: any | source: https://gameannaijo.com/edf6_kasegi/
+General tips from the Japanese guides
+Wide-area weapons such as rocket launchers shorten every run because they clear
+whole groups at once.
+Four-player multiplayer is far faster than solo.
+For armor, use the lowest difficulty that still keeps enemies coming: what
+matters is the number of crates, not the weapon level they roll.
+
+== mission: any | difficulty: any | class: any | source: (computed by this mod)
+How this crosses with your own progress
+The Farming tab ranks missions by the chance that a crate gives you a weapon you
+do NOT have yet, using your save. These strategies tell you where farming is
+comfortable; that tab tells you where it is still worth something to you.
+Read both: a comfortable mission whose pool you have already completed gives you
+nothing.
