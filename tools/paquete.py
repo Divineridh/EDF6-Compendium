@@ -5,6 +5,7 @@ import zipfile
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUILD = os.path.join(RAIZ, "build")
+DATOS = os.path.join(RAIZ, "data")
 FUENTE = os.path.join(RAIZ, "paquete")
 DESTINO = os.path.join(BUILD, "paquete")
 SALIDA = os.path.join(os.path.dirname(RAIZ), "builds")
@@ -14,7 +15,7 @@ DLL = os.path.join(BUILD, "EDF6Compendium.dll")
 CONTENIDO = [
     (DLL, "Mods/Plugins/EDF6Compendium.dll"),
     (os.path.join(BUILD, "weapons.tsv"), "Mods/Compendium/weapons.tsv"),
-    (os.path.join(BUILD, "missions.tsv"), "Mods/Compendium/missions.tsv"),
+    (os.path.join(DATOS, "missions.tsv"), "Mods/Compendium/missions.tsv"),
     (os.path.join(BUILD, "strats.tsv"), "Mods/Compendium/strats.tsv"),
     (os.path.join(FUENTE, "config.ini"), "Mods/Compendium/config.ini"),
     (os.path.join(FUENTE, "LEEME.txt"), "LEEME.txt"),

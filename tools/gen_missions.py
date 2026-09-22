@@ -1,4 +1,7 @@
-"""Tabla de dropeo por mision, desde el Equipment Farming Tool de Beardmo.
+"""Regenera data/missions.tsv desde el Equipment Farming Tool de Beardmo.
+
+La tabla derivada ya esta en el repo; esto solo hace falta para rehacerla.
+La planilla no se redistribuye: bajala como .xlsx a data/finder.xlsx.
 
 https://docs.google.com/spreadsheets/d/17KuXJJOhsRqB0Fi82DLdd0p5hU79Z_OcLRGp8_xTF1A
 
@@ -27,7 +30,7 @@ import xlsx
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LIBRO = os.path.join(RAIZ, "data", "finder.xlsx")
-SALIDA = os.path.join(RAIZ, "build", "missions.tsv")
+SALIDA = os.path.join(RAIZ, "data", "missions.tsv")
 
 # etiqueta -> (col min, col max, col probabilidad)
 DIFICULTADES = [

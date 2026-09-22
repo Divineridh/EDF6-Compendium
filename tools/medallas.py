@@ -55,7 +55,7 @@ VENTANA = 256
 
 def nombres_de_mision():
     ruta = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                        "build", "missions.tsv")
+                        "data", "missions.tsv")
     if not os.path.exists(ruta):
         return {}
     out = {}

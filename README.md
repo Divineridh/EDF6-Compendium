@@ -37,12 +37,20 @@ por el toolchain de `EDF6-UI`, que es el que tiene los parsers de SGO/DSGO.
 
 ```bash
 python tools/gen_tsv.py       # weapons.tsv, desde EDF6-UI/build/catalog.json
-python tools/gen_missions.py  # missions.tsv, desde data/finder.xlsx
 python tools/gen_strats.py    # strats.tsv, desde data/strats.txt
 ```
 
-`data/finder.xlsx` es una copia del Equipment Farming Tool de Beardmo (spreadsheet público); la
-atribución está en `tools/gen_missions.py`.
+`data/missions.tsv` ya está en el repo, así que no hay tercer comando. Sale del [Equipment Farming
+Tool de Beardmo](https://docs.google.com/spreadsheets/d/17KuXJJOhsRqB0Fi82DLdd0p5hU79Z_OcLRGp8_xTF1A), que no se
+redistribuye acá. Para rehacer la tabla, bajala como `.xlsx` a `data/finder.xlsx` y corré:
+
+```bash
+python tools/gen_missions.py
+```
+
+Ojo que la tabla **no es una copia** de la planilla: su columna de Inferno lista misiones donde
+el arma no puede caer, y `gen_missions.py` lo corrige calibrando contra el tamaño del pool. El
+porqué está en el docstring del script.
 
 ## Lo que costó averiguar
 

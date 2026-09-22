@@ -1,0 +1,808 @@
+Normal	2	Enemy Invaders	0	1	0.011364	0
+Hard	2	Enemy Invaders	0	5	0.005587	0
+Hardest	2	Enemy Invaders	26	34	0.008772	0
+Inferno	2	Enemy Invaders	25	53	0.002660	0
+Normal	3	Standard Mission	0	1	0.011364	0
+Hard	3	Standard Mission	0	5	0.005587	0
+Hardest	3	Standard Mission	26	35	0.007299	0
+Inferno	3	Standard Mission	26	53	0.002762	0
+Normal	4	Top Priority Extermination Order	0	1	0.011364	0
+Hard	4	Top Priority Extermination Order	0	5	0.005587	0
+Hardest	4	Top Priority Extermination Order	26	35	0.007299	0
+Inferno	4	Top Priority Extermination Order	26	53	0.002762	0
+Normal	5	Unchanging Days	0	1	0.011364	0
+Hard	5	Unchanging Days	0	5	0.005587	0
+Hardest	5	Unchanging Days	26	35	0.007299	0
+Inferno	5	Unchanging Days	27	53	0.002849	0
+Normal	6	Assist the Extermination Team	0	2	0.008403	0
+Hard	6	Assist the Extermination Team	0	6	0.004950	0
+Hardest	6	Assist the Extermination Team	26	36	0.006757	0
+Inferno	6	Assist the Extermination Team	27	53	0.002849	0
+Normal	7	Hive Cleanup Mission	0	2	0.008403	0
+Hard	7	Hive Cleanup Mission	0	6	0.004950	0
+Hardest	7	Hive Cleanup Mission	26	36	0.006757	0
+Inferno	7	Hive Cleanup Mission	28	54	0.002924	0
+Normal	8	Fanged Monsters	0	2	0.008403	0
+Hard	8	Fanged Monsters	0	7	0.004425	0
+Hardest	8	Fanged Monsters	27	36	0.007299	0
+Inferno	8	Fanged Monsters	28	54	0.002924	0
+Normal	9	Visitors	0	2	0.008403	0
+Hard	9	Visitors	0	7	0.004425	0
+Hardest	9	Visitors	27	36	0.007299	0
+Inferno	9	Visitors	28	55	0.002755	0
+Normal	10	The Next Day	0	2	0.008403	0
+Hard	10	The Next Day	0	7	0.004425	0
+Hardest	10	The Next Day	28	36	0.008197	0
+Inferno	10	The Next Day	28	55	0.002755	0
+Normal	11	Machine Men	0	2	0.008403	0
+Hard	11	Machine Men	0	7	0.004425	0
+Hardest	11	Machine Men	28	37	0.007407	0
+Inferno	11	Machine Men	28	55	0.002755	0
+Normal	12	The Colossal Machines	0	3	0.006944	0
+Hard	12	The Colossal Machines	0	8	0.004132	0
+Hardest	12	The Colossal Machines	28	37	0.007407	0
+Inferno	12	The Colossal Machines	29	56	0.002801	0
+Normal	13	The Big Day †††††	0	3	0.006944	0
+Hard	13	The Big Day †††††	0	8	0.004132	0
+Hardest	13	The Big Day †††††	28	37	0.007407	0
+Inferno	13	The Big Day †††††	29	56	0.002801	0
+Normal	14	Turning Point	0	3	0.006944	0
+Hard	14	Turning Point	1	9	0.005025	0
+Hardest	14	Turning Point	29	38	0.007519	0
+Inferno	14	Turning Point	29	56	0.002801	0
+Normal	15	Extermination	0	3	0.006944	0
+Hard	15	Extermination	1	9	0.005025	0
+Hardest	15	Extermination	29	38	0.007519	0
+Inferno	15	Extermination	30	56	0.002890	0
+Normal	16	Beta Spread	0	3	0.006944	0
+Hard	16	Beta Spread	1	9	0.005025	0
+Hardest	16	Beta Spread	29	38	0.007519	0
+Inferno	16	Beta Spread	30	57	0.002778	0
+Normal	17	Drone Invasion	0	3	0.006944	0
+Hard	17	Drone Invasion	1	10	0.004587	0
+Hardest	17	Drone Invasion	30	38	0.008197	0
+Inferno	17	Drone Invasion	30	57	0.002778	0
+Normal	18	Crash the Ship	0	3	0.006944	0
+Hard	18	Crash the Ship	2	10	0.005525	0
+Hardest	18	Crash the Ship	30	39	0.007692	0
+Inferno	18	Crash the Ship	31	58	0.002786	0
+Normal	19	Operation K6	0	3	0.006944	0
+Hard	19	Operation K6	2	10	0.005525	0
+Hardest	19	Operation K6	30	39	0.007692	0
+Inferno	19	Operation K6	31	58	0.002786	0
+Normal	20	Melee at the Pier	0	4	0.006329	0
+Hard	20	Melee at the Pier	2	11	0.005000	0
+Hardest	20	Melee at the Pier	31	40	0.007576	0
+Inferno	20	Melee at the Pier	32	58	0.002890	0
+Normal	21	The Silver Fleet	0	4	0.006329	0
+Hard	21	The Silver Fleet	3	11	0.005917	0
+Hardest	21	The Silver Fleet	31	40	0.007576	0
+Inferno	21	The Silver Fleet	32	58	0.002890	0
+Normal	22	The Third Machine	0	4	0.006329	0
+Hard	22	The Third Machine	3	11	0.005917	0
+Hardest	22	The Third Machine	31	40	0.007576	0
+Inferno	22	The Third Machine	32	59	0.002849	0
+Normal	23	Arrival of the Dropships	0	4	0.006329	0
+Hard	23	Arrival of the Dropships	3	12	0.005291	0
+Hardest	23	Arrival of the Dropships	31	40	0.007576	0
+Inferno	23	Arrival of the Dropships	33	59	0.002976	0
+Normal	24	Tower of Light	0	4	0.006329	0
+Hard	24	Tower of Light	3	12	0.005291	0
+Hardest	24	Tower of Light	32	41	0.007576	0
+Inferno	24	Tower of Light	33	60	0.002874	0
+Normal	25	Sniper Unit	0	5	0.005587	0
+Hard	25	Sniper Unit	4	12	0.006098	0
+Hardest	25	Sniper Unit	32	41	0.007576	0
+Inferno	25	Sniper Unit	33	60	0.002874	0
+Normal	26	Drifters	0	5	0.005587	0
+Hard	26	Drifters	4	13	0.005464	0
+Hardest	26	Drifters	32	41	0.007576	0
+Inferno	26	Drifters	34	60	0.002941	0
+Normal	27	The Red Machines	0	5	0.005587	0
+Hard	27	The Red Machines	4	13	0.005464	0
+Hardest	27	The Red Machines	33	42	0.007463	0
+Inferno	27	The Red Machines	34	61	0.002865	0
+Normal	28	Death Race	0	5	0.005587	0
+Hard	28	Death Race	5	13	0.005917	0
+Hardest	28	Death Race	33	42	0.007463	0
+Inferno	28	Death Race	34	61	0.002865	0
+Normal	29	Grenadiers	0	5	0.005587	0
+Hard	29	Grenadiers	5	13	0.005917	0
+Hardest	29	Grenadiers	33	42	0.007463	0
+Inferno	29	Grenadiers	34	62	0.002703	0
+Normal	30	Crash the Giant Ship...Again!	0	5	0.005587	0
+Hard	30	Crash the Giant Ship...Again!	6	13	0.006757	0
+Hardest	30	Crash the Giant Ship...Again!	33	43	0.006579	0
+Inferno	30	Crash the Giant Ship...Again!	35	62	0.002770	0
+Normal	31	Mother's Domain	0	5	0.005587	0
+Hard	31	Mother's Domain	6	13	0.006757	0
+Hardest	31	Mother's Domain	34	43	0.006944	0
+Inferno	31	Mother's Domain	35	62	0.002770	0
+Normal	32	Secret of the Hot Springs	0	6	0.004950	0
+Hard	32	Secret of the Hot Springs	6	14	0.006329	0
+Hardest	32	Secret of the Hot Springs	34	43	0.006944	0
+Inferno	32	Secret of the Hot Springs	36	62	0.002959	0
+Normal	33	The Winged Army	0	6	0.004950	0
+Hard	33	The Winged Army	7	14	0.007407	0
+Hardest	33	The Winged Army	35	43	0.007407	0
+Inferno	33	The Winged Army	36	63	0.002825	0
+Normal	34	Tower by the Shore	0	6	0.004950	0
+Hard	34	Tower by the Shore	7	15	0.006536	0
+Hardest	34	Tower by the Shore	35	43	0.007407	0
+Inferno	34	Tower by the Shore	36	64	0.002762	0
+Normal	35	The Crumbling Town	0	7	0.004425	0
+Hard	35	The Crumbling Town	7	15	0.006536	0
+Hardest	35	The Crumbling Town	35	43	0.007407	0
+Inferno	35	The Crumbling Town	37	64	0.002849	0
+Normal	36	Final Resistance	1	7	0.005714	0
+Hard	36	Final Resistance	7	16	0.005917	0
+Hardest	36	Final Resistance	35	44	0.007143	0
+Inferno	36	Final Resistance	37	64	0.002849	0
+Normal	37	Blazing Flames	1	7	0.005714	0
+Hard	37	Blazing Flames	8	16	0.006897	0
+Hardest	37	Blazing Flames	35	45	0.006329	0
+Inferno	37	Blazing Flames	37	64	0.002849	0
+Normal	38	Base 251 ††††††	1	7	0.005714	0
+Hard	38	Base 251 ††††††	8	16	0.006897	0
+Hardest	38	Base 251 ††††††	36	45	0.007407	0
+Inferno	38	Base 251 ††††††	38	64	0.002959	0
+Normal	39	Standard Mission I	1	7	0.005714	0
+Hard	39	Standard Mission I	8	16	0.006897	0
+Hardest	39	Standard Mission I	36	45	0.007407	0
+Inferno	39	Standard Mission I	38	65	0.002841	0
+Normal	40	Unchanging Days I	2	7	0.007246	0
+Hard	40	Unchanging Days I	9	16	0.007752	0
+Hardest	40	Unchanging Days I	36	45	0.007407	0
+Inferno	40	Unchanging Days I	38	65	0.002841	0
+Normal	41	Visitors I	2	7	0.007246	0
+Hard	41	Visitors I	9	17	0.006711	0
+Hardest	41	Visitors I	36	46	0.006803	0
+Inferno	41	Visitors I	39	66	0.002841	0
+Normal	42	The Next Day I	2	7	0.007246	0
+Hard	42	The Next Day I	10	17	0.007092	0
+Hardest	42	The Next Day I	37	46	0.007353	0
+Inferno	42	The Next Day I	39	66	0.002841	0
+Normal	43	World Gone Mad	2	7	0.007246	0
+Hard	43	World Gone Mad	10	18	0.006173	0
+Hardest	43	World Gone Mad	37	46	0.007353	0
+Inferno	43	World Gone Mad	40	66	0.002907	0
+Normal	44	Banquet of the Gods	2	7	0.007246	0
+Hard	44	Banquet of the Gods	10	18	0.006173	0
+Hardest	44	Banquet of the Gods	38	47	0.007463	0
+Inferno	44	Banquet of the Gods	40	66	0.002907	0
+Normal	45	Tunnel #1	2	8	0.006494	0
+Hard	45	Tunnel #1	11	19	0.006410	0
+Hardest	45	Tunnel #1	38	47	0.007463	0
+Inferno	45	Tunnel #1	40	67	0.002786	0
+Normal	46	The Big Day ††††††	3	8	0.008130	0
+Hard	46	The Big Day ††††††	11	19	0.006410	0
+Hardest	46	The Big Day ††††††	38	47	0.007463	0
+Inferno	46	The Big Day ††††††	40	67	0.002786	0
+Normal	47	Turning Point I	3	9	0.007634	0
+Hard	47	Turning Point I	11	19	0.006410	0
+Hardest	47	Turning Point I	39	47	0.008264	0
+Inferno	47	Turning Point I	41	68	0.002841	0
+Normal	48	Extermination I	3	9	0.007634	0
+Hard	48	Extermination I	11	20	0.005650	0
+Hardest	48	Extermination I	39	48	0.007692	0
+Inferno	48	Extermination I	42	68	0.002950	0
+Normal	49	Aranea's Mountain	3	9	0.007634	0
+Hard	49	Aranea's Mountain	12	20	0.006329	0
+Hardest	49	Aranea's Mountain	39	48	0.007692	0
+Inferno	49	Aranea's Mountain	42	68	0.002950	0
+Normal	50	The Treacherous Summit	3	9	0.007634	0
+Hard	50	The Treacherous Summit	12	20	0.006329	0
+Hardest	50	The Treacherous Summit	40	48	0.008197	0
+Inferno	50	The Treacherous Summit	42	69	0.002857	0
+Normal	51	Grenade Demolitions Unit	3	9	0.007634	0
+Hard	51	Grenade Demolitions Unit	12	21	0.005495	0
+Hardest	51	Grenade Demolitions Unit	40	49	0.007937	0
+Inferno	51	Grenade Demolitions Unit	42	69	0.002857	0
+Normal	52	Demons Descend	3	9	0.007634	0
+Hard	52	Demons Descend	12	21	0.005495	0
+Hardest	52	Demons Descend	40	49	0.007937	0
+Inferno	52	Demons Descend	42	69	0.002857	0
+Normal	53	Artillery Charge	3	9	0.007634	0
+Hard	53	Artillery Charge	13	21	0.006173	0
+Hardest	53	Artillery Charge	40	49	0.007937	0
+Inferno	53	Artillery Charge	43	70	0.002899	0
+Normal	54	Death Race I	3	9	0.007634	0
+Hard	54	Death Race I	13	21	0.006173	0
+Hardest	54	Death Race I	41	50	0.008333	0
+Inferno	54	Death Race I	43	70	0.002899	0
+Normal	55	Unstoppable Force vs. Immovable Object	4	10	0.008000	0
+Hard	55	Unstoppable Force vs. Immovable Object	14	22	0.006098	0
+Hardest	55	Unstoppable Force vs. Immovable Object	41	50	0.008333	0
+Inferno	55	Unstoppable Force vs. Immovable Object	43	70	0.002899	0
+Normal	56	Dropping Anchor	4	10	0.008000	0
+Hard	56	Dropping Anchor	14	22	0.006098	0
+Hardest	56	Dropping Anchor	41	50	0.008333	0
+Inferno	56	Dropping Anchor	44	71	0.002959	0
+Normal	57	The One-Eyed Giant	4	10	0.008000	0
+Hard	57	The One-Eyed Giant	14	22	0.006098	0
+Hardest	57	The One-Eyed Giant	41	50	0.008333	0
+Inferno	57	The One-Eyed Giant	44	71	0.002959	0
+Normal	58	Investigate the Massive Cave: Top Floor	5	11	0.007692	0
+Hard	58	Investigate the Massive Cave: Top Floor	15	23	0.006135	0
+Hardest	58	Investigate the Massive Cave: Top Floor	42	51	0.008403	0
+Inferno	58	Investigate the Massive Cave: Top Floor	44	71	0.002959	0
+Normal	59	Investigate the Massive Cave: Middle Floor	5	11	0.007692	0
+Hard	59	Investigate the Massive Cave: Middle Floor	15	23	0.006135	0
+Hardest	59	Investigate the Massive Cave: Middle Floor	42	51	0.008403	0
+Inferno	59	Investigate the Massive Cave: Middle Floor	45	71	0.003003	0
+Normal	60	Investigate the Massive Cave: Bottom Floor	5	11	0.007692	0
+Hard	60	Investigate the Massive Cave: Bottom Floor	16	24	0.006536	0
+Hardest	60	Investigate the Massive Cave: Bottom Floor	42	51	0.008403	0
+Inferno	60	Investigate the Massive Cave: Bottom Floor	45	72	0.002907	0
+Normal	61	Bluebird of Terror	5	11	0.007692	0
+Hard	61	Bluebird of Terror	16	24	0.006536	0
+Hardest	61	Bluebird of Terror	43	51	0.009804	0
+Inferno	61	Bluebird of Terror	45	72	0.002907	0
+Normal	62	Multi-Layered Wall	6	11	0.009174	0
+Hard	62	Multi-Layered Wall	16	24	0.006536	0
+Hardest	62	Multi-Layered Wall	43	52	0.008197	0
+Inferno	62	Multi-Layered Wall	45	73	0.002857	0
+Normal	63	Collision on the Plains	6	11	0.009174	0
+Hard	63	Collision on the Plains	16	25	0.005988	0
+Hardest	63	Collision on the Plains	43	52	0.008197	0
+Inferno	63	Collision on the Plains	46	73	0.003012	0
+Normal	64	Rear Guard	6	11	0.009174	0
+Hard	64	Rear Guard	17	25	0.006623	0
+Hardest	64	Rear Guard	43	52	0.008197	0
+Inferno	64	Rear Guard	46	73	0.003012	0
+Normal	65	The Enemies Behind	6	11	0.009174	0
+Hard	65	The Enemies Behind	17	25	0.006623	0
+Hardest	65	The Enemies Behind	43	53	0.007634	0
+Inferno	65	The Enemies Behind	47	73	0.003125	0
+Normal	66	Descending Hostiles	6	12	0.007752	0
+Hard	66	Descending Hostiles	17	26	0.006173	0
+Hardest	66	Descending Hostiles	44	53	0.008850	0
+Inferno	66	Descending Hostiles	47	74	0.003086	0
+Normal	67	Demon City	6	12	0.007752	0
+Hard	67	Demon City	17	26	0.006173	0
+Hardest	67	Demon City	44	53	0.008850	0
+Inferno	67	Demon City	48	74	0.003195	0
+Normal	68	The Shadows of Giants	6	12	0.007752	0
+Hard	68	The Shadows of Giants	18	26	0.007042	0
+Hardest	68	The Shadows of Giants	45	53	0.009259	0
+Inferno	68	The Shadows of Giants	48	75	0.003040	0
+Normal	69	The Machine Stronghold	7	12	0.009434	0
+Hard	69	The Machine Stronghold	18	26	0.007042	0
+Hardest	69	The Machine Stronghold	45	54	0.008772	0
+Inferno	69	The Machine Stronghold	48	75	0.003040	0
+Normal	70	Alien Knights	7	13	0.008000	0
+Hard	70	Alien Knights	18	27	0.006369	0
+Hardest	70	Alien Knights	45	54	0.008772	0
+Inferno	70	Alien Knights	48	75	0.003040	0
+Normal	71	Operation Lead Wall	7	13	0.008000	0
+Hard	71	Operation Lead Wall	19	27	0.007353	0
+Hardest	71	Operation Lead Wall	45	55	0.007407	0
+Inferno	71	Operation Lead Wall	49	76	0.002976	0
+Normal	72	Follow That Fortress	7	13	0.008000	0
+Hard	72	Follow That Fortress	19	27	0.007353	0
+Hardest	72	Follow That Fortress	45	55	0.007407	0
+Inferno	72	Follow That Fortress	50	76	0.003012	0
+Normal	73	The Crumbling Town I	7	13	0.008000	0
+Hard	73	The Crumbling Town I	20	28	0.007246	0
+Hardest	73	The Crumbling Town I	46	55	0.008547	0
+Inferno	73	The Crumbling Town I	50	76	0.003012	0
+Normal	74	Approaching the Fortress	7	13	0.008000	0
+Hard	74	Approaching the Fortress	20	28	0.007246	0
+Hardest	74	Approaching the Fortress	46	55	0.008547	0
+Inferno	74	Approaching the Fortress	51	77	0.002933	0
+Normal	75	Base 251 †††††††	8	13	0.009901	0
+Hard	75	Base 251 †††††††	21	28	0.008547	0
+Hardest	75	Base 251 †††††††	46	55	0.008547	0
+Inferno	75	Base 251 †††††††	51	77	0.002933	0
+Normal	76	Standard Mission II	8	13	0.009901	0
+Hard	76	Standard Mission II	21	29	0.007812	0
+Hardest	76	Standard Mission II	47	55	0.009524	0
+Inferno	76	Standard Mission II	51	78	0.002786	0
+Normal	77	Visitors II	8	13	0.009901	0
+Hard	77	Visitors II	21	29	0.007812	0
+Hardest	77	Visitors II	47	56	0.008772	0
+Inferno	77	Visitors II	51	78	0.002786	0
+Normal	78	The Next Day II	8	13	0.009901	0
+Hard	78	The Next Day II	21	29	0.007812	0
+Hardest	78	The Next Day II	48	56	0.009709	0
+Inferno	78	The Next Day II	51	78	0.002786	0
+Normal	79	World Gone Mad I	8	14	0.009009	0
+Hard	79	World Gone Mad I	21	30	0.006897	0
+Hardest	79	World Gone Mad I	48	57	0.008547	0
+Inferno	79	World Gone Mad I	51	78	0.002786	0
+Normal	80	Banquet of the Water God	8	14	0.009009	0
+Hard	80	Banquet of the Water God	22	30	0.008264	0
+Hardest	80	Banquet of the Water God	48	57	0.008547	0
+Inferno	80	Banquet of the Water God	52	79	0.002793	0
+Normal	81	Tunnel #2	9	14	0.010526	0
+Hard	81	Tunnel #2	22	30	0.008264	0
+Hardest	81	Tunnel #2	48	57	0.008547	0
+Inferno	81	Tunnel #2	52	79	0.002793	0
+Normal	82	The Big Day †††††††	9	14	0.010526	0
+Hard	82	The Big Day †††††††	23	30	0.010000	0
+Hardest	82	The Big Day †††††††	49	57	0.009259	0
+Inferno	82	The Big Day †††††††	54	79	0.003040	0
+Normal	83	Shattered Serenity	9	15	0.008850	0
+Hard	83	Shattered Serenity	23	31	0.008850	0
+Hardest	83	Shattered Serenity	49	58	0.008065	0
+Inferno	83	Shattered Serenity	53	80	0.002762	0
+Normal	84	Unidentified Flying Object	10	15	0.009524	0
+Hard	84	Unidentified Flying Object	23	31	0.008850	0
+Hardest	84	Unidentified Flying Object	49	58	0.008065	0
+Inferno	84	Unidentified Flying Object	53	80	0.002762	0
+Normal	85	Monsters Attack	10	15	0.009524	0
+Hard	85	Monsters Attack	23	31	0.008850	0
+Hardest	85	Monsters Attack	49	58	0.008065	0
+Inferno	85	Monsters Attack	54	80	0.002833	0
+Normal	86	The Spreading Calamity	10	15	0.009524	0
+Hard	86	The Spreading Calamity	24	32	0.008403	0
+Hardest	86	The Spreading Calamity	49	59	0.007752	0
+Inferno	86	The Spreading Calamity	54	81	0.002747	0
+Normal	87	Death Race II	10	15	0.009524	0
+Hard	87	Death Race II	24	32	0.008403	0
+Hardest	87	Death Race II	50	59	0.008000	0
+Inferno	87	Death Race II	54	81	0.002747	0
+Normal	88	Conqueror	10	15	0.009524	0
+Hard	88	Conqueror	24	32	0.008403	0
+Hardest	88	Conqueror	50	59	0.008000	0
+Inferno	88	Conqueror	55	82	0.002618	0
+Normal	89	The Coast Cleanup Plan	10	16	0.008264	0
+Hard	89	The Coast Cleanup Plan	25	33	0.008403	0
+Hardest	89	The Coast Cleanup Plan	51	60	0.008065	0
+Inferno	89	The Coast Cleanup Plan	55	82	0.002618	0
+Normal	90	Sudden Shock	10	16	0.008264	0
+Hard	90	Sudden Shock	25	33	0.008403	0
+Hardest	90	Sudden Shock	51	60	0.008065	0
+Inferno	90	Sudden Shock	56	82	0.002770	0
+Normal	91	The Swarm Surfaces	10	16	0.008264	0
+Hard	91	The Swarm Surfaces	26	34	0.008772	0
+Hardest	91	The Swarm Surfaces	51	60	0.008065	0
+Inferno	91	The Swarm Surfaces	56	83	0.002681	0
+Normal	92	Observe the Fleet	10	16	0.008264	0
+Hard	92	Observe the Fleet	26	34	0.008772	0
+Hardest	92	Observe the Fleet	52	60	0.008929	0
+Inferno	92	Observe the Fleet	56	83	0.002681	0
+Normal	93	The Giant Sleeping Bird	10	17	0.007092	0
+Hard	93	The Giant Sleeping Bird	26	35	0.007299	0
+Hardest	93	The Giant Sleeping Bird	52	60	0.008929	0
+Inferno	93	The Giant Sleeping Bird	57	84	0.002667	0
+Normal	94	Advance of the Machine Army	11	17	0.008197	0
+Hard	94	Advance of the Machine Army	27	35	0.007937	0
+Hardest	94	Advance of the Machine Army	52	61	0.008264	0
+Inferno	94	Advance of the Machine Army	57	84	0.002667	0
+Normal	95	Ambush	11	17	0.008197	0
+Hard	95	Ambush	27	35	0.007937	0
+Hardest	95	Ambush	52	61	0.008264	0
+Inferno	95	Ambush	57	84	0.002667	0
+Normal	96	Operation Bird-Buster	11	17	0.008197	0
+Hard	96	Operation Bird-Buster	27	35	0.007937	0
+Hardest	96	Operation Bird-Buster	52	61	0.008264	0
+Inferno	96	Operation Bird-Buster	58	85	0.002646	0
+Normal	97	Collision on the Plains I	11	17	0.008197	0
+Hard	97	Collision on the Plains I	27	36	0.007299	0
+Hardest	97	Collision on the Plains I	52	62	0.007042	0
+Inferno	97	Collision on the Plains I	58	85	0.002646	0
+Normal	98	Lured by the Shadow Fish	12	17	0.009709	0
+Hard	98	Lured by the Shadow Fish	28	36	0.008197	0
+Hardest	98	Lured by the Shadow Fish	53	62	0.008197	0
+Inferno	98	Lured by the Shadow Fish	57	85	0.002551	0
+Normal	99	The Burning Wharf	12	18	0.008065	0
+Hard	99	The Burning Wharf	28	36	0.008197	0
+Hardest	99	The Burning Wharf	53	63	0.007246	0
+Inferno	99	The Burning Wharf	58	85	0.002646	0
+Normal	100	Attack the Fleet	12	18	0.008065	0
+Hard	100	Attack the Fleet	28	37	0.007407	0
+Hardest	100	Attack the Fleet	53	63	0.007246	0
+Inferno	100	Attack the Fleet	59	86	0.002725	0
+Normal	101	Incandescent Zone	12	18	0.008065	0
+Hard	101	Incandescent Zone	29	37	0.008333	0
+Hardest	101	Incandescent Zone	54	63	0.007752	0
+Inferno	101	Incandescent Zone	59	86	0.002725	0
+Normal	102	The Armored Mountains	12	18	0.008065	0
+Hard	102	The Armored Mountains	29	37	0.008333	0
+Hardest	102	The Armored Mountains	54	64	0.007299	0
+Inferno	102	The Armored Mountains	60	87	0.002625	0
+Normal	103	Exterminate the Monsters	12	18	0.008065	0
+Hard	103	Exterminate the Monsters	30	37	0.009174	0
+Hardest	103	Exterminate the Monsters	55	64	0.007634	0
+Inferno	103	Exterminate the Monsters	60	87	0.002625	0
+Normal	104	Defend the Sub Carrier	13	18	0.009615	0
+Hard	104	Defend the Sub Carrier	30	38	0.008197	0
+Hardest	104	Defend the Sub Carrier	55	64	0.007634	0
+Inferno	104	Defend the Sub Carrier	60	87	0.002625	0
+Normal	105	Operation Bird-Buster II	13	18	0.009615	0
+Hard	105	Operation Bird-Buster II	30	38	0.008197	0
+Hardest	105	Operation Bird-Buster II	55	64	0.007634	0
+Inferno	105	Operation Bird-Buster II	60	88	0.002591	0
+Normal	106	Diversionary Tactics	13	18	0.009615	0
+Hard	106	Diversionary Tactics	30	38	0.008197	0
+Hardest	106	Diversionary Tactics	55	65	0.006897	0
+Inferno	106	Diversionary Tactics	61	88	0.002674	0
+Normal	108	Tactical Aircraft Operation	13	19	0.008547	0
+Hard	108	Tactical Aircraft Operation	31	39	0.008850	0
+Hardest	108	Tactical Aircraft Operation	56	65	0.008065	0
+Inferno	108	Tactical Aircraft Operation	61	89	0.002660	0
+Normal	109	Aliens Attack	13	19	0.008547	0
+Hard	109	Aliens Attack	31	40	0.007576	0
+Hardest	109	Aliens Attack	56	66	0.007299	0
+Inferno	109	Aliens Attack	62	89	0.002725	0
+Normal	110	Visitors III	13	19	0.008547	0
+Hard	110	Visitors III	31	40	0.007576	0
+Hardest	110	Visitors III	56	66	0.007299	0
+Inferno	110	Visitors III	62	87	0.002778	0
+Normal	111	The Next Day III	14	20	0.008403	0
+Hard	111	The Next Day III	32	40	0.008403	0
+Hardest	111	The Next Day III	57	66	0.007812	0
+Inferno	111	The Next Day III	63	90	0.002833	0
+Normal	112	World Gone Mad II	14	20	0.008403	0
+Hard	112	World Gone Mad II	32	40	0.008403	0
+Hardest	112	World Gone Mad II	57	66	0.007812	0
+Inferno	112	World Gone Mad II	63	90	0.002833	0
+Normal	113	Banquet of the Wind God	14	20	0.008403	0
+Hard	113	Banquet of the Wind God	33	41	0.008547	0
+Hardest	113	Banquet of the Wind God	57	66	0.007812	0
+Inferno	113	Banquet of the Wind God	63	90	0.002833	0
+Normal	114	Tunnel #3	14	20	0.008403	0
+Hard	114	Tunnel #3	33	41	0.008547	0
+Hardest	114	Tunnel #3	58	67	0.007752	0
+Inferno	114	Tunnel #3	63	90	0.002833	0
+Normal	115	The Big Day ††††††††	14	20	0.008403	0
+Hard	115	The Big Day ††††††††	33	42	0.007463	0
+Hardest	115	The Big Day ††††††††	58	67	0.007752	0
+Inferno	115	The Big Day ††††††††	64	90	0.002967	0
+Normal	116	Today's Plans	14	20	0.008403	0
+Hard	116	Today's Plans	33	42	0.007463	0
+Hardest	116	Today's Plans	58	67	0.007752	0
+Inferno	116	Today's Plans	65	90	0.003040	0
+Normal	117	Base 228 in Peril	15	21	0.007519	0
+Hard	117	Base 228 in Peril	34	42	0.007937	0
+Hardest	117	Base 228 in Peril	58	68	0.007092	0
+Inferno	117	Base 228 in Peril	64	91	0.002959	0
+Normal	118	Operation Annihilation	15	21	0.007519	0
+Hard	118	Operation Annihilation	34	42	0.007937	0
+Hardest	118	Operation Annihilation	59	68	0.008000	0
+Inferno	118	Operation Annihilation	65	92	0.003021	0
+Normal	119	Survey the Giant Cave	16	21	0.008696	0
+Hard	119	Survey the Giant Cave	34	43	0.006944	0
+Hardest	119	Survey the Giant Cave	59	68	0.008000	0
+Inferno	119	Survey the Giant Cave	66	92	0.003155	0
+Normal	120	Death Race III	16	21	0.008696	0
+Hard	120	Death Race III	35	43	0.007407	0
+Hardest	120	Death Race III	60	68	0.008333	0
+Inferno	120	Death Race III	66	92	0.003155	0
+Normal	121	Block the Transmission	16	21	0.008696	0
+Hard	121	Block the Transmission	35	43	0.007407	0
+Hardest	121	Block the Transmission	60	68	0.008333	0
+Inferno	121	Block the Transmission	66	92	0.003155	0
+Normal	122	Bogey Raid	16	21	0.008696	0
+Hard	122	Bogey Raid	35	43	0.007407	0
+Hardest	122	Bogey Raid	60	69	0.007634	0
+Inferno	122	Bogey Raid	67	92	0.003289	0
+Normal	123	Destroy the Giant Cave	16	21	0.008696	0
+Hard	123	Destroy the Giant Cave	36	44	0.008547	0
+Hardest	123	Destroy the Giant Cave	60	69	0.007634	0
+Inferno	123	Destroy the Giant Cave	67	92	0.003289	0
+Normal	124	Incubation	16	22	0.007353	0
+Hard	124	Incubation	36	44	0.008547	0
+Hardest	124	Incubation	61	70	0.007634	0
+Inferno	124	Incubation	67	92	0.003289	0
+Normal	125	The Sleeping Fleet	16	22	0.007353	0
+Hard	125	The Sleeping Fleet	36	45	0.007407	0
+Hardest	125	The Sleeping Fleet	61	70	0.007634	0
+Inferno	125	The Sleeping Fleet	67	92	0.003289	0
+Normal	126	Pouring Into Town	16	22	0.007353	0
+Hard	126	Pouring Into Town	37	45	0.008065	0
+Hardest	126	Pouring Into Town	61	71	0.007042	0
+Inferno	126	Pouring Into Town	68	95	0.003436	0
+Normal	127	Assembly Point	16	22	0.007353	0
+Hard	127	Assembly Point	37	45	0.008065	0
+Hardest	127	Assembly Point	62	71	0.007519	0
+Inferno	127	Assembly Point	68	95	0.003436	0
+Normal	128	The Mountain Stronghold	17	22	0.008333	0
+Hard	128	The Mountain Stronghold	37	46	0.007353	0
+Hardest	128	The Mountain Stronghold	62	71	0.007519	0
+Inferno	128	The Mountain Stronghold	68	95	0.003436	0
+Normal	129	Artillery Exchange	17	22	0.008333	0
+Hard	129	Artillery Exchange	38	46	0.008130	0
+Hardest	129	Artillery Exchange	63	71	0.008929	0
+Inferno	129	Artillery Exchange	69	95	0.003584	0
+Normal	130	Special Vehicle Unit	17	22	0.008333	0
+Hard	130	Special Vehicle Unit	38	46	0.008130	0
+Hardest	130	Special Vehicle Unit	63	72	0.008130	0
+Inferno	130	Special Vehicle Unit	69	95	0.003584	0
+Normal	131	A Reckless Gamble	17	22	0.008333	0
+Hard	131	A Reckless Gamble	38	47	0.007463	0
+Hardest	131	A Reckless Gamble	63	72	0.008130	0
+Inferno	131	A Reckless Gamble	70	95	0.003731	0
+Normal	132	Ship #11	17	23	0.007752	0
+Hard	132	Ship #11	39	47	0.008264	0
+Hardest	132	Ship #11	63	72	0.008130	0
+Inferno	132	Ship #11	70	95	0.003731	0
+Normal	134	The Webbed Castle	18	24	0.008547	0
+Hard	134	The Webbed Castle	39	47	0.008264	0
+Hardest	134	The Webbed Castle	63	73	0.007752	0
+Inferno	134	The Webbed Castle	71	95	0.003906	0
+Normal	135	Aliens Attack I	18	24	0.008547	0
+Hard	135	Aliens Attack I	40	48	0.008197	0
+Hardest	135	Aliens Attack I	64	73	0.008850	0
+Inferno	135	Aliens Attack I	71	95	0.003906	0
+Normal	136	The Giant God Comes Crashing	18	24	0.008547	0
+Hard	136	The Giant God Comes Crashing	40	48	0.008197	0
+Hardest	136	The Giant God Comes Crashing	64	73	0.008850	0
+Inferno	136	The Giant God Comes Crashing	71	95	0.003906	0
+Normal	137	Visitors IIII	18	24	0.008547	0
+Hard	137	Visitors IIII	40	48	0.008197	0
+Hardest	137	Visitors IIII	65	73	0.009524	0
+Inferno	137	Visitors IIII	72	95	0.004082	0
+Normal	138	Unchanging Days''	18	24	0.008547	0
+Hard	138	Unchanging Days''	41	49	0.009346	0
+Hardest	138	Unchanging Days''	65	74	0.009174	0
+Inferno	138	Unchanging Days''	72	95	0.004082	0
+Normal	139	Ultimate Force	18	24	0.008547	0
+Hard	139	Ultimate Force	41	49	0.009346	0
+Hardest	139	Ultimate Force	65	74	0.009174	0
+Inferno	139	Ultimate Force	72	95	0.004082	0
+Normal	140	Major Mechanical Soldier Invasion	19	25	0.009091	0
+Hard	140	Major Mechanical Soldier Invasion	41	50	0.008333	0
+Hardest	140	Major Mechanical Soldier Invasion	65	75	0.008000	0
+Inferno	140	Major Mechanical Soldier Invasion	72	95	0.004082	0
+Normal	141	Crisis on the Summit'	19	25	0.009091	0
+Hard	141	Crisis on the Summit'	42	50	0.009346	0
+Hardest	141	Crisis on the Summit'	66	75	0.009009	0
+Inferno	141	Crisis on the Summit'	73	95	0.004274	0
+Normal	142	City without Lights	19	25	0.009091	0
+Hard	142	City without Lights	42	50	0.009346	0
+Hardest	142	City without Lights	66	75	0.009009	0
+Inferno	142	City without Lights	73	95	0.004274	0
+Normal	143	Pursuers	19	25	0.009091	0
+Hard	143	Pursuers	42	51	0.008403	0
+Hardest	143	Pursuers	66	75	0.009009	0
+Inferno	143	Pursuers	74	95	0.004386	0
+Normal	144	The Next Day IIII	19	25	0.009091	0
+Hard	144	The Next Day IIII	43	51	0.009804	0
+Hardest	144	The Next Day IIII	66	76	0.007874	0
+Inferno	144	The Next Day IIII	74	95	0.004386	0
+Normal	145	Operation Ring-Cracker: Part 1	19	25	0.009091	0
+Hard	145	Operation Ring-Cracker: Part 1	43	51	0.009804	0
+Hardest	145	Operation Ring-Cracker: Part 1	67	76	0.008772	0
+Inferno	145	Operation Ring-Cracker: Part 1	74	95	0.004386	0
+Normal	146	Operation Ring-Cracker: Part 2	20	26	0.009259	0
+Hard	146	Operation Ring-Cracker: Part 2	43	52	0.008197	0
+Hardest	146	Operation Ring-Cracker: Part 2	67	76	0.008772	0
+Inferno	146	Operation Ring-Cracker: Part 2	75	95	0.004464	0
+Normal	147	The Scales of Time	20	26	0.009259	0
+Hard	147	The Scales of Time	43	52	0.008197	0
+Hardest	147	The Scales of Time	67	76	0.008772	0
+Inferno	147	The Scales of Time	75	95	0.004464	0
+Normal	DLC1 - 1	Crisis at Base 228	21	27	0.009804	1
+Hard	DLC1 - 1	Crisis at Base 228	45	52	0.010101	1
+Hardest	DLC1 - 1	Crisis at Base 228	68	77	0.008264	1
+Inferno	DLC1 - 1	Crisis at Base 228	75	101	0.004016	1
+Normal	DLC1 - 2	Monster Attack	21	27	0.009804	1
+Hard	DLC1 - 2	Monster Attack	45	52	0.010101	1
+Hardest	DLC1 - 2	Monster Attack	69	77	0.009174	1
+Inferno	DLC1 - 2	Monster Attack	75	101	0.004016	1
+Normal	DLC1 - 3	Brink of Destruction	22	28	0.010753	1
+Hard	DLC1 - 3	Brink of Destruction	46	52	0.012346	1
+Hardest	DLC1 - 3	Brink of Destruction	70	77	0.010204	1
+Inferno	DLC1 - 3	Brink of Destruction	76	102	0.004115	1
+Normal	DLC1 - 4	Crumbling City	22	28	0.010753	1
+Hard	DLC1 - 4	Crumbling City	46	53	0.011111	1
+Hardest	DLC1 - 4	Crumbling City	70	78	0.008621	1
+Inferno	DLC1 - 4	Crumbling City	77	103	0.004202	1
+Normal	DLC1 - 5	Spawn Site	23	28	0.013889	1
+Hard	DLC1 - 5	Spawn Site	46	53	0.011111	1
+Hardest	DLC1 - 5	Spawn Site	70	78	0.008621	1
+Inferno	DLC1 - 5	Spawn Site	78	103	0.004630	1
+Normal	DLC1 - 6	Unmanned Bombers	23	29	0.012048	1
+Hard	DLC1 - 6	Unmanned Bombers	46	54	0.010417	1
+Hardest	DLC1 - 6	Unmanned Bombers	70	79	0.007874	1
+Inferno	DLC1 - 6	Unmanned Bombers	78	104	0.004310	1
+Normal	DLC1 - 7	Messenger of Disaster	23	29	0.012048	1
+Hard	DLC1 - 7	Messenger of Disaster	47	54	0.011905	1
+Hardest	DLC1 - 7	Messenger of Disaster	71	79	0.008696	1
+Inferno	DLC1 - 7	Messenger of Disaster	79	104	0.004673	1
+Normal	DLC1 - 8	α Colony Swarm	24	29	0.013514	1
+Hard	DLC1 - 8	α Colony Swarm	47	54	0.011905	1
+Hardest	DLC1 - 8	α Colony Swarm	71	79	0.008696	1
+Inferno	DLC1 - 8	α Colony Swarm	80	105	0.004808	1
+Normal	DLC1 - 9	Airborne Invaders	24	30	0.010989	1
+Hard	DLC1 - 9	Airborne Invaders	48	55	0.010638	1
+Hardest	DLC1 - 9	Airborne Invaders	72	79	0.009615	1
+Inferno	DLC1 - 9	Airborne Invaders	82	106	0.005495	1
+Normal	DLC1 - 10	Giant Monster Ball	25	30	0.012048	1
+Hard	DLC1 - 10	Giant Monster Ball	49	55	0.011765	1
+Hardest	DLC1 - 10	Giant Monster Ball	72	80	0.007812	1
+Inferno	DLC1 - 10	Giant Monster Ball	82	106	0.005495	1
+Normal	DLC1 - 11	β Colony Rush	25	30	0.012048	1
+Hard	DLC1 - 11	β Colony Rush	49	55	0.011765	1
+Hardest	DLC1 - 11	β Colony Rush	72	80	0.007812	1
+Inferno	DLC1 - 11	β Colony Rush	82	106	0.005495	1
+Normal	DLC1 - 12	City Destruction	25	31	0.010417	1
+Hard	DLC1 - 12	City Destruction	49	55	0.011765	1
+Hardest	DLC1 - 12	City Destruction	72	81	0.007194	1
+Inferno	DLC1 - 12	City Destruction	83	106	0.006329	1
+Normal	DLC1 - 13	Paratroopers	25	31	0.010417	1
+Hard	DLC1 - 13	Paratroopers	49	56	0.010638	1
+Hardest	DLC1 - 13	Paratroopers	72	81	0.007194	1
+Inferno	DLC1 - 13	Paratroopers	83	106	0.006329	1
+Normal	DLC1 - 14	Operation Mountain Survey	26	32	0.010309	1
+Hard	DLC1 - 14	Operation Mountain Survey	50	56	0.011111	1
+Hardest	DLC1 - 14	Operation Mountain Survey	73	82	0.006579	1
+Inferno	DLC1 - 14	Operation Mountain Survey	84	106	0.006849	1
+Normal	DLC1 - 15	Dark Strategy	26	32	0.010309	1
+Hard	DLC1 - 15	Dark Strategy	50	57	0.009615	1
+Hardest	DLC1 - 15	Dark Strategy	73	82	0.006579	1
+Inferno	DLC1 - 15	Dark Strategy	84	106	0.006849	1
+Normal	DLC1 - 16	Contaminated Zone Part I	27	32	0.011628	1
+Hard	DLC1 - 16	Contaminated Zone Part I	51	57	0.010989	1
+Hardest	DLC1 - 16	Contaminated Zone Part I	74	82	0.006849	1
+Inferno	DLC1 - 16	Contaminated Zone Part I	86	106	0.008475	1
+Normal	DLC1 - 17	Contaminated Zone Part II	27	32	0.011628	1
+Hard	DLC1 - 17	Contaminated Zone Part II	50	58	0.008333	1
+Hardest	DLC1 - 17	Contaminated Zone Part II	75	83	0.006494	1
+Inferno	DLC1 - 17	Contaminated Zone Part II	86	106	0.008475	1
+Normal	DLC1 - 18	Code N	27	33	0.010638	1
+Hard	DLC1 - 18	Code N	51	58	0.009346	1
+Hardest	DLC1 - 18	Code N	75	83	0.006494	1
+Inferno	DLC1 - 18	Code N	87	106	0.008850	1
+Normal	DLC2 - 1	LV A-1 α Attack	27	33	0.010638	2
+Hard	DLC2 - 1	LV A-1 α Attack	51	58	0.009346	2
+Hardest	DLC2 - 1	LV A-1 α Attack	75	83	0.006494	2
+Inferno	DLC2 - 1	LV A-1 α Attack	81	100	0.007752	2
+Normal	DLC2 - 2	LV A-2 β Attack	28	34	0.011364	2
+Hard	DLC2 - 2	LV A-2 β Attack	52	58	0.010526	2
+Hardest	DLC2 - 2	LV A-2 β Attack	75	83	0.006494	2
+Inferno	DLC2 - 2	LV A-2 β Attack	82	100	0.008475	2
+Normal	DLC2 - 3	LV A-3 Red Anchor	28	34	0.011364	2
+Hard	DLC2 - 3	LV A-3 Red Anchor	52	59	0.010000	2
+Hardest	DLC2 - 3	LV A-3 Red Anchor	76	83	0.007246	2
+Inferno	DLC2 - 3	LV A-3 Red Anchor	82	100	0.008475	2
+Normal	DLC2 - 4	LV A-4 Type 3 Hunt	29	35	0.010417	2
+Hard	DLC2 - 4	LV A-4 Type 3 Hunt	52	60	0.008929	2
+Hardest	DLC2 - 4	LV A-4 Type 3 Hunt	77	85	0.006667	2
+Inferno	DLC2 - 4	LV A-4 Type 3 Hunt	82	100	0.008475	2
+Normal	DLC2 - 5	LV A-5 Kruul Hunt	29	35	0.010417	2
+Hard	DLC2 - 5	LV A-5 Kruul Hunt	53	60	0.010870	2
+Hardest	DLC2 - 5	LV A-5 Kruul Hunt	77	85	0.006667	2
+Inferno	DLC2 - 5	LV A-5 Kruul Hunt	83	100	0.010638	2
+Normal	DLC2 - 6	LV A-6 Kruul Artillery	30	35	0.011765	2
+Hard	DLC2 - 6	LV A-6 Kruul Artillery	53	60	0.010870	2
+Hardest	DLC2 - 6	LV A-6 Kruul Artillery	77	85	0.006667	2
+Inferno	DLC2 - 6	LV A-6 Kruul Artillery	83	100	0.010638	2
+Normal	DLC2 - 7	LV B-1 Hive Breaker	30	36	0.010417	2
+Hard	DLC2 - 7	LV B-1 Hive Breaker	54	61	0.010870	2
+Hardest	DLC2 - 7	LV B-1 Hive Breaker	77	86	0.006452	2
+Inferno	DLC2 - 7	LV B-1 Hive Breaker	83	100	0.010638	2
+Normal	DLC2 - 8	LV B-2 High-Altitude Sniper	30	36	0.010417	2
+Hard	DLC2 - 8	LV B-2 High-Altitude Sniper	55	61	0.011628	2
+Hardest	DLC2 - 8	LV B-2 High-Altitude Sniper	78	86	0.007519	2
+Inferno	DLC2 - 8	LV B-2 High-Altitude Sniper	84	100	0.012195	2
+Normal	DLC2 - 9	LV B-3 The Pit	31	36	0.012658	2
+Hard	DLC2 - 9	LV B-3 The Pit	55	61	0.011628	2
+Hardest	DLC2 - 9	LV B-3 The Pit	78	86	0.007519	2
+Inferno	DLC2 - 9	LV B-3 The Pit	84	100	0.012195	2
+Normal	DLC2 - 10	LV C-1 Android Hunt	31	37	0.010870	2
+Hard	DLC2 - 10	LV C-1 Android Hunt	55	62	0.009346	2
+Hardest	DLC2 - 10	LV C-1 Android Hunt	79	87	0.007463	2
+Inferno	DLC2 - 10	LV C-1 Android Hunt	84	100	0.012195	2
+Normal	DLC2 - 11	LV C-2 Big Android	32	37	0.012658	2
+Hard	DLC2 - 11	LV C-2 Big Android	55	63	0.008130	2
+Hardest	DLC2 - 11	LV C-2 Big Android	79	87	0.007463	2
+Inferno	DLC2 - 11	LV C-2 Big Android	85	100	0.014085	2
+Normal	DLC2 - 12	LV D-1 High-Grade Hunt	32	38	0.010870	2
+Hard	DLC2 - 12	LV D-1 High-Grade Hunt	56	63	0.009804	2
+Hardest	DLC2 - 12	LV D-1 High-Grade Hunt	80	87	0.008130	2
+Inferno	DLC2 - 12	LV D-1 High-Grade Hunt	85	100	0.014085	2
+Normal	DLC2 - 13	LV D-2 Sky Attack	33	38	0.012987	2
+Hard	DLC2 - 13	LV D-2 Sky Attack	57	63	0.010753	2
+Hardest	DLC2 - 13	LV D-2 Sky Attack	80	87	0.008130	2
+Inferno	DLC2 - 13	LV D-2 Sky Attack	85	100	0.014085	2
+Normal	DLC2 - 14	LV D-3 Sniper Tower	33	39	0.011765	2
+Hard	DLC2 - 14	LV D-3 Sniper Tower	57	64	0.009901	2
+Hardest	DLC2 - 14	LV D-3 Sniper Tower	81	88	0.009615	2
+Inferno	DLC2 - 14	LV D-3 Sniper Tower	85	100	0.014085	2
+Normal	DLC2 - 15	LV E-1 Kraken Hunt	34	40	0.010417	2
+Hard	DLC2 - 15	LV E-1 Kraken Hunt	58	65	0.009901	2
+Hardest	DLC2 - 15	LV E-1 Kraken Hunt	82	90	0.009804	2
+Inferno	DLC2 - 15	LV E-1 Kraken Hunt	86	100	0.018519	2
+Normal	DLC2 - 16	LV E-2 Excavators Hunt	34	40	0.010417	2
+Hard	DLC2 - 16	LV E-2 Excavators Hunt	58	65	0.009901	2
+Hardest	DLC2 - 16	LV E-2 Excavators Hunt	82	90	0.009804	2
+Inferno	DLC2 - 16	LV E-2 Excavators Hunt	87	100	0.020408	2
+Normal	DLC2 - 17	LV E-3 Ship Attack	34	40	0.010417	2
+Hard	DLC2 - 17	LV E-3 Ship Attack	58	65	0.009901	2
+Hardest	DLC2 - 17	LV E-3 Ship Attack	82	90	0.009804	2
+Inferno	DLC2 - 17	LV E-3 Ship Attack	87	100	0.020408	2
+Normal	DLC2 - 18	LV F-1 Fall Back	35	41	0.010000	2
+Hard	DLC2 - 18	LV F-1 Fall Back	58	66	0.008772	2
+Hardest	DLC2 - 18	LV F-1 Fall Back	82	91	0.009709	2
+Inferno	DLC2 - 18	LV F-1 Fall Back	87	100	0.020408	2
+Normal	DLC2 - 19	LV F-2 Haze Hunt	35	41	0.010000	2
+Hard	DLC2 - 19	LV F-2 Haze Hunt	59	66	0.010204	2
+Hardest	DLC2 - 19	LV F-2 Haze Hunt	83	91	0.012658	2
+Inferno	DLC2 - 19	LV F-2 Haze Hunt	87	100	0.020408	2
+Normal	DLC2 - 20	LV F-3 Siren's Call	36	42	0.010638	2
+Hard	DLC2 - 20	LV F-3 Siren's Call	60	66	0.010753	2
+Hardest	DLC2 - 20	LV F-3 Siren's Call	83	91	0.012658	2
+Inferno	DLC2 - 20	LV F-3 Siren's Call	87	100	0.020408	2
+Normal	DLC2 - 21	LV S-1 Anchors	37	42	0.012048	2
+Hard	DLC2 - 21	LV S-1 Anchors	60	67	0.009259	2
+Hardest	DLC2 - 21	LV S-1 Anchors	84	91	0.014925	2
+Inferno	DLC2 - 21	LV S-1 Anchors	88	100	0.033333	2
+Normal	DLC2 - 22	LV S-2 Machine Attack	37	43	0.009901	2
+Hard	DLC2 - 22	LV S-2 Machine Attack	60	68	0.008333	2
+Hardest	DLC2 - 22	LV S-2 Machine Attack	84	92	0.014706	2
+Inferno	DLC2 - 22	LV S-2 Machine Attack	88	100	0.033333	2
+Normal	DLC2 - 23	LV S-3 Type 3x3	37	43	0.009901	2
+Hard	DLC2 - 23	LV S-3 Type 3x3	62	68	0.010101	2
+Hardest	DLC2 - 23	LV S-3 Type 3x3	85	92	0.017544	2
+Inferno	DLC2 - 23	LV S-3 Type 3x3	88	100	0.033333	2
+Normal	DLC2 - 24	LV S-4 The Shield	38	43	0.011364	2
+Hard	DLC2 - 24	LV S-4 The Shield	61	69	0.008403	2
+Hardest	DLC2 - 24	LV S-4 The Shield	85	92	0.017544	2
+Inferno	DLC2 - 24	LV S-4 The Shield	88	100	0.033333	2
+Normal	DLC2 - 25	LV SS-1 Cruising Kruul	38	44	0.010753	2
+Hard	DLC2 - 25	LV SS-1 Cruising Kruul	62	69	0.009091	2
+Hardest	DLC2 - 25	LV SS-1 Cruising Kruul	86	92	0.025000	2
+Inferno	DLC2 - 25	LV SS-1 Cruising Kruul	89	100	0.040000	2
+Normal	DLC2 - 26	LV SS-2 Bottom Falls Out	38	44	0.010753	2
+Hard	DLC2 - 26	LV SS-2 Bottom Falls Out	62	69	0.009091	2
+Hardest	DLC2 - 26	LV SS-2 Bottom Falls Out	86	92	0.025000	2
+Inferno	DLC2 - 26	LV SS-2 Bottom Falls Out	90	100	0.043478	2
+Normal	DLC2 - 27	LV SS-3 Air Strike Team	39	45	0.010204	2
+Hard	DLC2 - 27	LV SS-3 Air Strike Team	63	70	0.009901	2
+Hardest	DLC2 - 27	LV SS-3 Air Strike Team	86	95	0.023810	2
+Inferno	DLC2 - 27	LV SS-3 Air Strike Team	90	100	0.043478	2
+Normal	DLC2 - 28	LV SS-4 The Big	39	45	0.010204	2
+Hard	DLC2 - 28	LV SS-4 The Big	63	70	0.009901	2
+Hardest	DLC2 - 28	LV SS-4 The Big	87	95	0.027027	2
+Inferno	DLC2 - 28	LV SS-4 The Big	90	100	0.043478	2
+Normal	DLC2 - 29	LV X-1 Snow March	40	46	0.009804	2
+Hard	DLC2 - 29	LV X-1 Snow March	64	71	0.010417	2
+Hardest	DLC2 - 29	LV X-1 Snow March	87	95	0.027027	2
+Inferno	DLC2 - 29	LV X-1 Snow March	90	100	0.043478	2
+Normal	DLC2 - 30	LV X-2 Alien Circle	41	46	0.012048	2
+Hard	DLC2 - 30	LV X-2 Alien Circle	64	71	0.010417	2
+Hardest	DLC2 - 30	LV X-2 Alien Circle	88	95	0.055556	2
+Inferno	DLC2 - 30	LV X-2 Alien Circle	95	100	0.071429	2
+Normal	DLC2 - 31	LV Z-1 Fast Ship	41	47	0.010638	2
+Hard	DLC2 - 31	LV Z-1 Fast Ship	65	72	0.010101	2
+Hardest	DLC2 - 31	LV Z-1 Fast Ship	89	95	0.076923	2
+Inferno	DLC2 - 31	LV Z-1 Fast Ship	95	100	0.071429	2
+Normal	DLC2 - 32	LV Z-2 Dead Cave	41	47	0.010638	2
+Hard	DLC2 - 32	LV Z-2 Dead Cave	65	72	0.010101	2
+Hardest	DLC2 - 32	LV Z-2 Dead Cave	89	95	0.076923	2
+Inferno	DLC2 - 32	LV Z-2 Dead Cave	95	100	0.071429	2
+Normal	DLC2 - 33	LV ZZ-1 Midnight Battle	42	47	0.012346	2
+Hard	DLC2 - 33	LV ZZ-1 Midnight Battle	66	73	0.010989	2
+Hardest	DLC2 - 33	LV ZZ-1 Midnight Battle	89	95	0.076923	2
+Inferno	DLC2 - 33	LV ZZ-1 Midnight Battle	95	100	0.071429	2
+Normal	DLC2 - 34	LV ZZZ-1 The Poison	42	47	0.012346	2
+Hard	DLC2 - 34	LV ZZZ-1 The Poison	66	73	0.010989	2
+Hardest	DLC2 - 34	LV ZZZ-1 The Poison	90	95	0.090909	2
+Inferno	DLC2 - 34	LV ZZZ-1 The Poison	95	100	0.071429	2
+Normal	DLC2 - 35	LV ZZZ-2 Monster Attack	43	49	0.012987	2
+Hard	DLC2 - 35	LV ZZZ-2 Monster Attack	66	73	0.010989	2
+Hardest	DLC2 - 35	LV ZZZ-2 Monster Attack	91	95	0.250000	2
+Inferno	DLC2 - 35	LV ZZZ-2 Monster Attack	95	100	0.071429	2
+Normal	DLC2 - 36	LV ZZZZ-A Kraken Rush	43	49	0.012987	2
+Hard	DLC2 - 36	LV ZZZZ-A Kraken Rush	67	73	0.012821	2
+Hardest	DLC2 - 36	LV ZZZZ-A Kraken Rush	91	95	0.250000	2
+Inferno	DLC2 - 36	LV ZZZZ-A Kraken Rush	95	100	0.071429	2
+Normal	DLC2 - 37	LV ZZZZ-S Golden Fleet	43	49	0.012987	2
+Hard	DLC2 - 37	LV ZZZZ-S Golden Fleet	67	74	0.012195	2
+Hardest	DLC2 - 37	LV ZZZZ-S Golden Fleet	91	95	0.250000	2
+Inferno	DLC2 - 37	LV ZZZZ-S Golden Fleet	95	100	0.071429	2
+Normal	DLC2 - 38	LV ZZZZ-X Hive Rush	44	50	0.013889	2
+Hard	DLC2 - 38	LV ZZZZ-X Hive Rush	68	75	0.012048	2
+Hardest	DLC2 - 38	LV ZZZZ-X Hive Rush	92	95	0.333333	2
+Inferno	DLC2 - 38	LV ZZZZ-X Hive Rush	95	100	0.071429	2
+Normal	DLC2 - 39	LV ZZZZ-Y Last Attack	45	50	0.014925	2
+Hard	DLC2 - 39	LV ZZZZ-Y Last Attack	68	75	0.012048	2
+Hardest	DLC2 - 39	LV ZZZZ-Y Last Attack	92	95	0.333333	2
+Inferno	DLC2 - 39	LV ZZZZ-Y Last Attack	95	100	0.071429	2
+Normal	DLC2 - 40	LV ZZZZ-Z The Ring	45	51	0.012658	2
+Hard	DLC2 - 40	LV ZZZZ-Z The Ring	68	75	0.012048	2
+Hardest	DLC2 - 40	LV ZZZZ-Z The Ring	92	95	0.333333	2
+Inferno	DLC2 - 40	LV ZZZZ-Z The Ring	95	100	0.071429	2
