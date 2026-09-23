@@ -8,6 +8,7 @@
 #include <PluginAPI.h>
 
 #include "compendium.h"
+#include "loadouts.h"
 
 static Catalog g_catalog;
 
@@ -404,6 +405,7 @@ static DWORD WINAPI MainThread(LPVOID) {
     LeerObtenidasDelSave();
     LoadWishlist();
     InitOverlay();
+    InitLoadouts();
     return 0;
 }
 

@@ -5,7 +5,7 @@ if not exist build mkdir build
 cl /nologo /std:c++17 /EHsc /O2 /MT /LD /W3 ^
    /D "IMGUI_DISABLE_OBSOLETE_FUNCTIONS" ^
    /I "deps\EDF6Plugins" /I "deps\imgui" /I "deps\minhook\include" ^
-   src\compendium.cpp src\overlay.cpp src\savedata.cpp ^
+   src\compendium.cpp src\overlay.cpp src\savedata.cpp src\loadouts.cpp ^
    deps\imgui\imgui.cpp deps\imgui\imgui_draw.cpp deps\imgui\imgui_tables.cpp deps\imgui\imgui_widgets.cpp ^
    deps\imgui\backends\imgui_impl_dx11.cpp deps\imgui\backends\imgui_impl_win32.cpp ^
    deps\minhook\src\buffer.c deps\minhook\src\hook.c deps\minhook\src\trampoline.c deps\minhook\src\hde\hde64.c ^
