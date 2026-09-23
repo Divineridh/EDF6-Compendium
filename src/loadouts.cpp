@@ -2,9 +2,13 @@
 
 #include <atomic>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
+#include <mutex>
 #include <string>
 #include <vector>
+
+#include "imgui.h"
 
 #include "compendium.h"
 #include "loadouts.h"
@@ -21,8 +25,27 @@ constexpr DWORD kPollMs = 500;
 
 const char *const kClassNames[kClassCount] = {"Ranger", "Wing Diver", "Air Raider", "Fencer"};
 
+const ImVec4 kCardHeader(0.06f, 0.43f, 0.34f, 0.95f);
+const ImVec4 kCardRow(0.03f, 0.31f, 0.25f, 0.90f);
+const ImVec4 kCardGap(0.02f, 0.20f, 0.17f, 0.90f);
+const ImVec4 kCardBorder(0.36f, 0.79f, 0.65f, 1.0f);
+const ImVec4 kLevel(0.62f, 0.88f, 0.80f, 1.0f);
+const ImVec4 kLevelMaxed(0.98f, 0.78f, 0.46f, 1.0f);
+
 std::vector<int> g_classOfWeapon;
 std::atomic<const uint32_t *> g_table{nullptr};
+
+std::mutex g_snapshotMutex;
+Equipment g_snapshot;
+bool g_snapshotValid = false;
+
+void PublishSnapshot(const Equipment *e) {
+    std::lock_guard<std::mutex> lock(g_snapshotMutex);
+    g_snapshotValid = e != nullptr;
+    if (e) {
+        g_snapshot = *e;
+    }
+}
 
 bool LooksLikeTable(const uint32_t *p) {
     if (p[0] >= kClassCount || p[kTableDwords] != kTerminator) {
@@ -126,33 +149,6 @@ void LogEquipment(const Equipment &e) {
     }
 }
 
-DWORD WINAPI WatchThread(LPVOID) {
-    Equipment last;
-    bool haveLast = false;
-    bool reportedMissing = false;
-    for (;;) {
-        Equipment now;
-        if (!ReadEquipment(now)) {
-            if (!reportedMissing) {
-                Log("loadouts: tabla no encontrada; reintento cada 5 s (normal antes de cargar la partida)");
-                reportedMissing = true;
-                haveLast = false;
-            }
-            Sleep(kRescanMs);
-            continue;
-        }
-        reportedMissing = false;
-        if (!haveLast || memcmp(&now, &last, sizeof(now)) != 0) {
-            LogEquipment(now);
-            last = now;
-            haveLast = true;
-        }
-        Sleep(kPollMs);
-    }
-}
-
-}
-
 bool ReadEquipment(Equipment &out) {
     const uint32_t *table = g_table.load();
     if (table && CopyIfValid(table, out)) {
@@ -168,6 +164,123 @@ bool ReadEquipment(Equipment &out) {
     }
     g_table = table;
     return CopyIfValid(table, out);
+}
+
+DWORD WINAPI WatchThread(LPVOID) {
+    Equipment last;
+    bool haveLast = false;
+    bool reportedMissing = false;
+    for (;;) {
+        Equipment now;
+        if (!ReadEquipment(now)) {
+            PublishSnapshot(nullptr);
+            if (!reportedMissing) {
+                Log("loadouts: tabla no encontrada; reintento cada 5 s (normal antes de cargar la partida)");
+                reportedMissing = true;
+                haveLast = false;
+            }
+            Sleep(kRescanMs);
+            continue;
+        }
+        reportedMissing = false;
+        PublishSnapshot(&now);
+        if (!haveLast || memcmp(&now, &last, sizeof(now)) != 0) {
+            LogEquipment(now);
+            last = now;
+            haveLast = true;
+        }
+        Sleep(kPollMs);
+    }
+}
+
+void RightAlignedText(const ImVec4 &color, const char *text) {
+    const float x = ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize(text).x;
+    ImGui::SetCursorPosX(x);
+    ImGui::TextColored(color, "%s", text);
+}
+
+void DrawCard(const char *id, const char *title, const int slots[kSlotsPerClass], float scale) {
+    ImGui::PushStyleColor(ImGuiCol_TableBorderStrong, kCardBorder);
+    ImGui::PushStyleColor(ImGuiCol_TableBorderLight, kCardGap);
+    const ImGuiTableFlags flags = ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInnerH;
+    if (ImGui::BeginTable(id, 2, flags, ImVec2(430.0f * scale, 0.0f))) {
+        ImGui::TableSetupColumn("weapon", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("level", ImGuiTableColumnFlags_WidthFixed, 56.0f * scale);
+
+        ImGui::TableNextRow();
+        ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(kCardHeader));
+        ImGui::TableSetColumnIndex(0);
+        ImGui::TextUnformatted(title);
+
+        for (int s = 0; s < kSlotsPerClass; s++) {
+            if (s == kWeaponSlotsPerClass) {
+                ImGui::TableNextRow(ImGuiTableRowFlags_None, 6.0f * scale);
+                ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(kCardGap));
+            }
+            ImGui::TableNextRow();
+            ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(kCardRow));
+            const Weapon *w = ArmaPorIndice(slots[s]);
+            ImGui::TableSetColumnIndex(0);
+            if (w) {
+                ImGui::TextUnformatted(w->name.c_str());
+            } else {
+                ImGui::TextDisabled("unknown weapon #%d", slots[s]);
+            }
+            ImGui::TableSetColumnIndex(1);
+            if (w) {
+                char level[16];
+                snprintf(level, sizeof(level), "Lv%d", w->level);
+                RightAlignedText(w->starred ? kLevelMaxed : kLevel, level);
+            }
+        }
+        ImGui::EndTable();
+    }
+    ImGui::PopStyleColor(2);
+}
+
+}
+
+bool CurrentEquipment(Equipment &out) {
+    std::lock_guard<std::mutex> lock(g_snapshotMutex);
+    if (g_snapshotValid) {
+        out = g_snapshot;
+    }
+    return g_snapshotValid;
+}
+
+void DrawLoadoutsPanel(bool &open, float scale) {
+    static int lastFrame = -2;
+    const bool justOpened = ImGui::GetFrameCount() != lastFrame + 1;
+    lastFrame = ImGui::GetFrameCount();
+
+    if (!ImGui::Begin("Loadouts", &open, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::End();
+        return;
+    }
+
+    Equipment e;
+    if (!CurrentEquipment(e)) {
+        ImGui::TextUnformatted("Equipment not found yet.");
+        ImGui::TextDisabled("Load your save and go to the lobby; it's picked up within a few seconds.");
+        ImGui::End();
+        return;
+    }
+
+    if (ImGui::BeginTabBar("classes")) {
+        for (int c = 0; c < kClassCount; c++) {
+            char label[64];
+            snprintf(label, sizeof(label), "%s%s###class%d", kClassNames[c],
+                     c == e.activeClass ? " (active)" : "", c);
+            const ImGuiTabItemFlags flags =
+                justOpened && c == e.activeClass ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None;
+            if (ImGui::BeginTabItem(label, nullptr, flags)) {
+                DrawCard("equipped", "Equipped now", e.slots[c], scale);
+                ImGui::EndTabItem();
+            }
+        }
+        ImGui::EndTabBar();
+    }
+    ImGui::End();
 }
 
 void InitLoadouts() {

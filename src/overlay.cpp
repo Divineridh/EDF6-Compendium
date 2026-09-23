@@ -17,6 +17,7 @@
 #include "backends/imgui_impl_win32.h"
 
 #include "compendium.h"
+#include "loadouts.h"
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND, UINT, WPARAM, LPARAM);
 
@@ -33,8 +34,14 @@ static ID3D11RenderTargetView *g_rtv = nullptr;
 static HWND g_window = nullptr;
 static bool g_imguiReady = false;
 static std::atomic<bool> g_visible{false};
+static std::atomic<bool> g_loadoutsVisible{false};
 static std::atomic<unsigned long long> g_frames{0};
 static std::atomic<bool> g_toggleSolicitado{false};
+static std::atomic<bool> g_toggleLoadoutsSolicitado{false};
+
+static bool AlgunPanelVisible() {
+    return g_visible || g_loadoutsVisible;
+}
 
 static char g_filter[64] = "";
 
@@ -1222,10 +1229,11 @@ static POINT g_cursorCongelado = {0, 0};
 // que usa el juego: si el juego responde al teclado, esto responde tambien.
 // No hace falta ninguna API nueva ni un hook global.
 static std::atomic<bool> g_teclaEspiada{false};
+static std::atomic<bool> g_teclaLoadoutsEspiada{false};
 static std::atomic<bool> g_juegoLeeTeclado{false};
 
 static bool Bloqueando() {
-    return g_visible && !g_enImGui;
+    return AlgunPanelVisible() && !g_enImGui;
 }
 
 static SHORT WINAPI hkGetKeyState(int vk) {
@@ -1233,6 +1241,9 @@ static SHORT WINAPI hkGetKeyState(int vk) {
     g_juegoLeeTeclado = true;
     if (vk == TeclaToggle()) {
         g_teclaEspiada = (r & 0x8000) != 0;
+    }
+    if (vk == TeclaLoadouts()) {
+        g_teclaLoadoutsEspiada = (r & 0x8000) != 0;
     }
     if (Bloqueando()) {
         return 0;
@@ -1247,6 +1258,10 @@ static BOOL WINAPI hkGetKeyboardState(PBYTE estado) {
         const int vk = TeclaToggle();
         if (vk > 0 && vk < 256) {
             g_teclaEspiada = (estado[vk] & 0x80) != 0;
+        }
+        const int vkLoadouts = TeclaLoadouts();
+        if (vkLoadouts > 0 && vkLoadouts < 256) {
+            g_teclaLoadoutsEspiada = (estado[vkLoadouts] & 0x80) != 0;
         }
         if (Bloqueando()) {
             memset(estado, 0, 256);
@@ -1300,7 +1315,11 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         g_toggleSolicitado = true;
         return 0;
     }
-    if (g_visible && g_imguiReady) {
+    if (msg == WM_KEYDOWN && wp == (WPARAM)TeclaLoadouts()) {
+        g_toggleLoadoutsSolicitado = true;
+        return 0;
+    }
+    if (AlgunPanelVisible() && g_imguiReady) {
         ImGui_ImplWin32_WndProcHandler(hwnd, msg, wp, lp);
         const ImGuiIO &io = ImGui::GetIO();
         const bool teclado = io.WantCaptureKeyboard &&
@@ -1518,21 +1537,55 @@ static void Latido(bool enFoco) {
     proximo = t + 10000;
 }
 
+static const char *PulsacionNueva(int vk, bool espiada, bool porMensaje, bool &anterior) {
+    const bool porApi = SondeoDirecto() && (GetAsyncKeyState(vk) & 0x8000) != 0;
+    const bool ahora = porApi || espiada;
+    const bool porSondeo = ahora && !anterior;
+    anterior = ahora;
+    if (!porSondeo && !porMensaje) {
+        return nullptr;
+    }
+    return !porSondeo ? "mensaje de ventana" : (porApi ? "sondeo directo" : "lectura del propio juego");
+}
+
+static unsigned long long MsDesde(unsigned long long &ultimo) {
+    const unsigned long long t = GetTickCount64();
+    const unsigned long long delta = t - ultimo;
+    if (delta >= 250) {
+        ultimo = t;
+    }
+    return delta;
+}
+
+static void AlternarPanel(std::atomic<bool> &propio, std::atomic<bool> &otro) {
+    const bool yaBloqueaba = AlgunPanelVisible();
+    propio = !propio;
+    if (propio) {
+        otro = false;
+        if (!yaBloqueaba && oGetCursorPos) {
+            oGetCursorPos(&g_cursorCongelado);
+        }
+    }
+}
+
 static void RevisarToggle() {
     static bool anterior = false;
+    static bool anteriorLoadouts = false;
     static bool avisado = false;
     static bool avisadoFoco = false;
     static unsigned long long ultimoToggle = 0;
+    static unsigned long long ultimoToggleLoadouts = 0;
 
     // Un WM_KEYDOWN solo llega si la ventana tiene el foco de teclado de verdad,
     // asi que ese camino no pasa por el filtro. En las maquinas donde
     // GetForegroundWindow miente, es el unico que queda.
     const bool porMensaje = g_toggleSolicitado.exchange(false);
+    const bool porMensajeLoadouts = g_toggleLoadoutsSolicitado.exchange(false);
     const bool enFoco = JuegoEnFoco();
     EscanearTeclado();
     Latido(enFoco);
 
-    if (!porMensaje && !enFoco) {
+    if (!porMensaje && !porMensajeLoadouts && !enFoco) {
         // Se avisa una sola vez: si el overlay no abre, este renglon separa
         // "no detecto el foco" de "no me llega la tecla".
         if (!avisadoFoco) {
@@ -1545,6 +1598,7 @@ static void RevisarToggle() {
             avisadoFoco = true;
         }
         anterior = false;
+        anteriorLoadouts = false;
         return;
     }
     if (!avisado) {
@@ -1553,31 +1607,29 @@ static void RevisarToggle() {
         avisado = true;
     }
 
-    const bool porApi = SondeoDirecto() && (GetAsyncKeyState(TeclaToggle()) & 0x8000) != 0;
-    const bool porEspia = g_teclaEspiada;
-    const bool ahora = porApi || porEspia;
-    const bool porSondeo = ahora && !anterior;
-    anterior = ahora;
+    if (const char *camino = PulsacionNueva(TeclaToggle(), g_teclaEspiada, porMensaje, anterior)) {
+        g_algunaTecla = true;
+        LogF("1. tecla detectada por %s", camino);
+        const unsigned long long delta = MsDesde(ultimoToggle);
+        if (delta < 250) {
+            LogF("2. descartada: hubo otra hace %llu ms", delta);
+        } else {
+            AlternarPanel(g_visible, g_loadoutsVisible);
+            LogF("2. overlay -> %s", g_visible ? "abierto" : "cerrado");
+        }
+    }
 
-    if (!porSondeo && !porMensaje) {
-        return;
+    if (const char *camino = PulsacionNueva(TeclaLoadouts(), g_teclaLoadoutsEspiada,
+                                            porMensajeLoadouts, anteriorLoadouts)) {
+        g_algunaTecla = true;
+        const unsigned long long delta = MsDesde(ultimoToggleLoadouts);
+        if (delta < 250) {
+            LogF("loadouts: tecla por %s descartada, hubo otra hace %llu ms", camino, delta);
+        } else {
+            AlternarPanel(g_loadoutsVisible, g_visible);
+            LogF("loadouts: tecla por %s, panel -> %s", camino, g_loadoutsVisible ? "abierto" : "cerrado");
+        }
     }
-    g_algunaTecla = true;
-    LogF("1. tecla detectada por %s",
-         !porSondeo ? "mensaje de ventana"
-                    : (porApi ? "sondeo directo" : "lectura del propio juego"));
-
-    const unsigned long long t = GetTickCount64();
-    if (t - ultimoToggle < 250) {
-        LogF("2. descartada: hubo otra hace %llu ms", t - ultimoToggle);
-        return;
-    }
-    ultimoToggle = t;
-    g_visible = !g_visible;
-    if (g_visible && oGetCursorPos) {
-        oGetCursorPos(&g_cursorCongelado);
-    }
-    LogF("2. overlay -> %s", g_visible ? "abierto" : "cerrado");
 }
 
 static void FrameOverlay(IDXGISwapChain *swap) {
@@ -1587,7 +1639,7 @@ static void FrameOverlay(IDXGISwapChain *swap) {
     AsegurarRenderTarget(swap);
     RevisarSave();
     const bool toast = ToastActivo();
-    if (g_visible && (!g_imguiReady || !g_rtv)) {
+    if (AlgunPanelVisible() && (!g_imguiReady || !g_rtv)) {
         static bool avisadoSinDibujo = false;
         if (!avisadoSinDibujo) {
             LogF("3. overlay abierto pero NO se puede dibujar: imgui %s, render target %s",
@@ -1595,7 +1647,7 @@ static void FrameOverlay(IDXGISwapChain *swap) {
             avisadoSinDibujo = true;
         }
     }
-    if (g_imguiReady && (g_visible || toast) && g_rtv) {
+    if (g_imguiReady && (AlgunPanelVisible() || toast) && g_rtv) {
         static bool avisadoDibujo = false;
         if (!avisadoDibujo) {
             Log("3. primer frame del overlay dibujado");
@@ -1608,6 +1660,13 @@ static void FrameOverlay(IDXGISwapChain *swap) {
         ImGui::NewFrame();
         if (g_visible) {
             DrawUI();
+        }
+        if (g_loadoutsVisible) {
+            bool abierto = true;
+            DrawLoadoutsPanel(abierto, g_escala);
+            if (!abierto) {
+                g_loadoutsVisible = false;
+            }
         }
         if (toast) {
             DrawToast();

@@ -213,21 +213,27 @@ static std::string ValorDeConfig(const char *clave, const char *alias) {
 // Tecla del overlay. Si algo mas se queda con F1 —el overlay de la placa de
 // video, por ejemplo— se cambia sin recompilar poniendo en
 // Mods\Compendium\config.ini una linea "tecla=0x71" con el codigo virtual.
-int TeclaToggle() {
-    static int tecla = 0;
-    if (tecla) {
-        return tecla;
-    }
-    tecla = VK_F1;
-    const std::string valor = ValorDeConfig("tecla", "key");
+static int LeerTecla(const char *clave, const char *alias, int porDefecto, const char *uso) {
+    int tecla = porDefecto;
+    const std::string valor = ValorDeConfig(clave, alias);
     if (!valor.empty()) {
         const int v = (int)strtol(valor.c_str(), nullptr, 0);
         if (v > 0 && v < 256) {
             tecla = v;
         }
     }
-    LogF("tecla de toggle: 0x%02X (%s)", tecla,
+    LogF("tecla de %s: 0x%02X (%s)", uso, tecla,
          valor.empty() ? "por defecto, config.ini ausente o sin la clave" : "leida de config.ini");
+    return tecla;
+}
+
+int TeclaToggle() {
+    static const int tecla = LeerTecla("tecla", "key", VK_F1, "toggle");
+    return tecla;
+}
+
+int TeclaLoadouts() {
+    static const int tecla = LeerTecla("tecla_loadouts", "loadouts_key", VK_F2, "loadouts");
     return tecla;
 }
 
@@ -399,6 +405,7 @@ static DWORD WINAPI MainThread(LPVOID) {
     // Si el save se puede leer, manda el: tiene el estado real y ademas incluye
     // armas que la pantalla de equipamiento oculta por el limite de nivel.
     TeclaToggle();
+    TeclaLoadouts();
     FiltroDeFoco();
     SondeoDirecto();
     MarcarFarmeables();

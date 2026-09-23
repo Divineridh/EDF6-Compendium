@@ -8,5 +8,6 @@ struct Equipment {
     int slots[kClassCount][kSlotsPerClass] = {};
 };
 
-bool ReadEquipment(Equipment &out);
+bool CurrentEquipment(Equipment &out);
+void DrawLoadoutsPanel(bool &open, float scale);
 void InitLoadouts();
