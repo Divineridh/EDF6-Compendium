@@ -13,7 +13,7 @@
 static Catalog g_catalog;
 
 // Ruta relativa al ejecutable del juego, no al directorio actual.
-static std::string GamePath(const char *rel) {
+std::string GamePath(const char *rel) {
     char path[MAX_PATH];
     GetModuleFileNameA(nullptr, path, MAX_PATH);
     char *slash = strrchr(path, '\\');

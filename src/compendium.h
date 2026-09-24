@@ -90,6 +90,8 @@ const char *SavePath();
 void Log(const char *msg);
 void LogF(const char *fmt, ...);
 
+std::string GamePath(const char *rel);
+
 int TeclaToggle();
 int TeclaLoadouts();
 
