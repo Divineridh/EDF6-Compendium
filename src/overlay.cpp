@@ -1400,6 +1400,7 @@ static void InitImGui(IDXGISwapChain *swap) {
         // Sin la fuente del sistema seguimos con la de imgui: se ve peor pero anda.
         Log("no pude cargar segoeui.ttf, sigo con la fuente por defecto");
     }
+    LoadLoadoutsFonts();
 
     // io.FontGlobalScale se movio a style.FontScaleMain en imgui 1.92.
     const float escala = desc.BufferDesc.Height >= 1440 ? 2.0f : 1.6f;
