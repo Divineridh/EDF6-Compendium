@@ -1,15 +1,15 @@
-"""Descifra los archivos de save de EDF6.
+"""Decrypts EDF6 save files.
 
-AES-256-CTR. La clave y el IV se derivan del nombre del archivo:
+AES-256-CTR. The key and IV are derived from the file name:
 
-    clave = MD5(utf16le("edf6" + nombre + ".sav")) + b"Edf5.*_Steam_Ver"
-    iv    = MD5(utf16le("edf6" + nombre + ".stm"))
+    key = MD5(utf16le("edf6" + name + ".sav")) + b"Edf5.*_Steam_Ver"
+    iv  = MD5(utf16le("edf6" + name + ".stm"))
 
-El texto plano arranca con el magic "MDB".
+The plaintext starts with the magic "MDB".
 
-Algoritmo publicado en EDFDecrypt.cpp del EDFSaveEditor de FevGrave, con credito
-a Quarri6343 por haberlo descubierto. Reimplementado aca en Python para no
-depender de un binario de terceros.
+Algorithm published in EDFDecrypt.cpp of FevGrave's EDFSaveEditor, with credit
+to Quarri6343 for discovering it. Reimplemented here in Python so as not to
+depend on a third-party binary.
 """
 
 import hashlib
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     magic = datos[:3]
     print("%s -> %d bytes, magic=%r %s" % (
         os.path.basename(ruta), len(datos), magic,
-        "OK" if magic == b"MDB" else "<-- no descifro bien"))
+        "OK" if magic == b"MDB" else "<-- didn't decrypt"))
     if len(sys.argv) > 3:
         open(sys.argv[3], "wb").write(datos)
-        print("escrito", sys.argv[3])
+        print("wrote", sys.argv[3])

@@ -1,10 +1,10 @@
-# salidas de compilacion y datos generados
+# build output and generated data
 build/
 
-# la planilla de Beardmo no se redistribuye, ver el README
+# Beardmo's spreadsheet isn't redistributed, see the README
 data/finder.xlsx
 
-# clones de terceros, ver el README para traerlos
+# third-party clones, see the README to get them
 deps/
 
 __pycache__/

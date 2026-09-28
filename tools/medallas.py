@@ -1,20 +1,20 @@
-"""Completa las medallas de dificultad de las misiones ya ganadas en Inferno.
+"""Fills in the difficulty medals of missions already won on Inferno.
 
-Cada archivo .MST del save trae un array de un byte por mision, donde los bits
-son las dificultades completadas:
+Each .MST file of the save holds an array of one byte per mission, whose bits
+are the completed difficulties:
 
     bit 0  Easy      bit 1  Normal    bit 2  Hard
     bit 3  Hardest   bit 4  Inferno
 
-Si ganaste una mision en Inferno, las otras cuatro son un tramite; esto las
-marca. El array vive en 0x041C en los tres .MST, que tienen el mismo tamaño y
-layout; solo se tocan los bytes que YA tienen el bit de Inferno, asi que no hace
-falta saber cuantas misiones trae cada campaña.
+If you won a mission on Inferno, the other four are a formality; this marks
+them. The array lives at 0x041C in the three .MST files, which share size and
+layout; only bytes that ALREADY have the Inferno bit are touched, so there's no
+need to know how many missions each campaign has.
 
-OJO: los .MST llevan un checksum en 0x0C que no supimos reproducir. Si el juego
-lo verifica al cargar, un save editado se rechaza. Por eso el modo por defecto
-es simulacion: mostra que cambiaria y no toca nada. Con --aplicar escribe, y
-siempre deja un .bak al lado.
+CAREFUL: the .MST files carry a checksum at 0x0C that we couldn't reproduce. If
+the game checks it on load, an edited save is rejected. That's why the default
+mode is a dry run: it shows what would change and touches nothing. --apply
+writes, and always leaves a .bak next to each file.
 """
 
 import os
@@ -45,7 +45,7 @@ def carpeta_save():
             if slot.lower().startswith("saveslot") and os.path.isdir(s):
                 slots.append((os.path.getmtime(os.path.join(s, "MAIN.GST")), s))
     if not slots:
-        raise SystemExit("no encontre ningun saveslot")
+        raise SystemExit("couldn't find any saveslot")
     return max(slots)[1]
 
 
@@ -81,7 +81,7 @@ def completar(datos):
 
 
 def main():
-    aplicar = "--aplicar" in sys.argv
+    aplicar = "--apply" in sys.argv
     slot = carpeta_save()
     nombres = nombres_de_mision()
     print("save: %s" % slot)
@@ -94,27 +94,27 @@ def main():
         key, iv = claves(nombre)
         claro = ctr_xor(open(ruta, "rb").read(), key, iv)
         if claro[:3] != b"MDB":
-            print("%-16s no descifro bien, lo salteo" % nombre)
+            print("%-16s didn't decrypt, skipping it" % nombre)
             continue
         nuevo, cambios, ganadas = completar(claro)
-        print("%-16s %d misiones con alguna dificultad hecha" % (nombre, ganadas))
+        print("%-16s %d missions with some difficulty done" % (nombre, ganadas))
         for indice, antes, faltaban in cambios:
             titulo = nombres.get(str(indice + 1), "")
-            print("   mision %-4d %-34s 0x%02X -> 0x1F   suma %s" % (
+            print("   mission %-4d %-34s 0x%02X -> 0x1F   adds %s" % (
                 indice + 1, titulo[:34], antes, ", ".join(faltaban)))
         if not cambios:
-            print("   nada que completar")
+            print("   nothing to fill in")
             continue
         total += len(cambios)
         if aplicar:
             shutil.copyfile(ruta, ruta + ".bak")
             open(ruta, "wb").write(ctr_xor(nuevo, key, iv))
-            print("   escrito (copia en %s.bak)" % nombre)
+            print("   written (copy in %s.bak)" % nombre)
     print()
     if not aplicar:
-        print("simulacion: no se toco nada. Con --aplicar se escribe.")
+        print("dry run: nothing was touched. --apply writes.")
     else:
-        print("%d misiones completadas. Si el juego rechaza el save, restaura los .bak" % total)
+        print("%d missions filled in. If the game rejects the save, restore the .bak files" % total)
 
 
 if __name__ == "__main__":

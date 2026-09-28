@@ -34,16 +34,16 @@ struct Weapon {
     int category = 0;
     bool owned = false;
 
-    // Tope de mejora de cada stat (de WEAPONTABLE) contra el nivel actual (del
-    // save). Cuando todos llegan al tope el juego le pone estrella al nombre.
+    // Upgrade cap of each stat (from WEAPONTABLE) against the current level (from
+    // the save). When every stat reaches its cap, the game puts a star on the name.
     std::vector<int> upgradeMax;
     std::vector<int> upgradeNow;
     bool starred = false;
 
     bool wish = false;
 
-    // Las cajas de una mision solo sortean armas de su tier o menor: base=0,
-    // MissionPack A=1, B=2. farmable resume si alguna mision puede soltarla.
+    // A mission's crates only roll weapons of its tier or lower: base=0,
+    // MissionPack A=1, B=2. farmable says whether any mission can drop it.
     int tier = 0;
     bool farmable = false;
 };
@@ -71,9 +71,9 @@ void LoadDrops();
 const std::vector<Drop> &GetDrops();
 void MarcarFarmeables();
 
-// Estrategias de farmeo de la comunidad, en Mods/Compendium/strats.tsv.
+// Community farming strategies, in Mods/Compendium/strats.tsv.
 struct Strat {
-    std::string mission;      // numero de mision, o "any"
+    std::string mission;      // mission number, or "any"
     std::string difficulty;
     std::string className;
     std::string title;
@@ -84,12 +84,12 @@ struct Strat {
 void LoadStrats();
 const std::vector<Strat> &GetStrats();
 
-// Estado real de obtenidas, descifrando MAIN.GST.
+// Real owned state, decrypting MAIN.GST.
 bool LeerObtenidasDelSave();
 unsigned long long MomentoLecturaSave();
 
-// Indices que pasaron de no obtenidas a obtenidas en la ultima relectura del
-// save. Vacio en la primera, que compara contra el TSV y no contra una partida.
+// Indices that went from not owned to owned in the last save reread. Empty on
+// the first read, which compares against the TSV and not against a play session.
 const std::vector<int> &RecienObtenidas();
 bool SaveCambio();
 const char *SavePathUsado();
@@ -100,8 +100,8 @@ void LoadCatalog();
 Catalog &MutableCatalog();
 Weapon *ArmaPorIndice(int index);
 
-// Lista de deseados, en Mods/Compendium/wishlist.txt. Se indexa por indice de
-// WEAPONTABLE y no por nombre: hay armas con nombre repetido.
+// Wishlist, in Mods/Compendium/wishlist.txt. Indexed by WEAPONTABLE index, not
+// by name: some weapons share a name.
 void LoadWishlist();
 bool SaveWishlist();
 int EnWishlist();
@@ -113,13 +113,13 @@ std::string GamePath(const char *rel);
 
 int TeclaToggle();
 
-// Si el filtro de foco esta habilitado. Se apaga con "foco=0" en config.ini para
-// las maquinas donde la ventana de adelante nunca es la del juego.
+// Whether the focus filter is on. Turned off with "focus=0" in config.ini for
+// machines where the window in front is never the game's.
 bool FiltroDeFoco();
 
-// Apaga el sondeo directo con GetAsyncKeyState ("sondeo=0"), para poder probar
-// que los otros dos caminos de entrada andan en una maquina donde el directo
-// funciona. Sin esto, el camino de respaldo nunca se ejercita.
+// Turns off direct polling with GetAsyncKeyState ("poll=0"), to check that the
+// other two input paths work on a machine where the direct one does. Without
+// this, the fallback path never gets exercised.
 bool SondeoDirecto();
 
 void InitOverlay();

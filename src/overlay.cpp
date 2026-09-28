@@ -64,9 +64,9 @@ void DescartarNuevas() {
     g_nuevasWish.clear();
 }
 
-// El save se revisa cada dos segundos y no por frame: alcanza de sobra para
-// avisar al volver de una mision, y hay que hacerlo con el overlay cerrado para
-// que el aviso llegue sin tener que abrirlo.
+// The save is checked every two seconds, not every frame: plenty to notice when
+// you come back from a mission, and it has to run with the overlay closed so the
+// notice shows up without opening it.
 static void RevisarSave() {
     static unsigned long long proxima = 0;
     const unsigned long long ahora = GetTickCount64();
@@ -139,16 +139,16 @@ static void DrawToast() {
 
 // ---------------------------------------------------------------- hooks
 
-// ------------------------------------------------------- bloqueo de input
+// ------------------------------------------------------------ input blocking
 //
-// EDF6 no lee el mouse por mensajes de ventana: importa GetKeyState,
-// GetKeyboardState y GetCursorPos, o sea que consulta el estado directamente y
-// se saltea el WndProc. Para que el overlay no dispare acciones del juego hay
-// que mentirle a esas tres.
+// EDF6 doesn't read the mouse through window messages: it imports GetKeyState,
+// GetKeyboardState and GetCursorPos, so it queries the state directly and
+// skips the WndProc. To keep the overlay from triggering game actions, those
+// three have to lie to it.
 //
-// El problema es que el backend Win32 de imgui usa las mismas funciones. Por eso
-// el bloqueo se levanta durante nuestro NewFrame: adentro de esa ventana las
-// llamadas son nuestras y pasan de largo; afuera son del juego y se neutralizan.
+// The catch is that imgui's Win32 backend uses the same functions. So the block
+// is lifted during our NewFrame: inside that window the calls are ours and go
+// through; outside it they are the game's and get neutralized.
 
 typedef SHORT(WINAPI *GetKeyStateFn)(int);
 typedef BOOL(WINAPI *GetKeyboardStateFn)(PBYTE);
@@ -161,11 +161,11 @@ static GetCursorPosFn oGetCursorPos = nullptr;
 static bool g_enImGui = false;
 static POINT g_cursorCongelado = {0, 0};
 
-// Tercer camino de entrada, y el mas confiable: estas dos funciones ya estaban
-// enganchadas para poder mutearle el teclado al juego, y GetKeyboardState trae
-// el estado de las 256 teclas. Leyendo de ahi usamos exactamente el mismo dato
-// que usa el juego: si el juego responde al teclado, esto responde tambien.
-// No hace falta ninguna API nueva ni un hook global.
+// Third input path, and the most reliable one: these two functions were already
+// hooked to mute the keyboard for the game, and GetKeyboardState returns the
+// state of all 256 keys. Reading it there uses exactly the same data the game
+// uses: if the game responds to the keyboard, this responds too. No new API and
+// no global hook needed.
 static std::atomic<bool> g_teclaEspiada{false};
 static std::atomic<bool> g_teclaModuloEspiada[kMaxModules];
 static std::atomic<bool> g_juegoLeeTeclado{false};
@@ -237,22 +237,22 @@ static void EngancharInput() {
     for (auto &o : objetivos) {
         void *dir = (void *)GetProcAddress(user32, o.nombre);
         if (!dir) {
-            LogF("no encontre %s", o.nombre);
+            LogF("couldn't find %s", o.nombre);
             continue;
         }
         if (MH_CreateHook(dir, o.reemplazo, o.original) != MH_OK ||
             MH_EnableHook(dir) != MH_OK) {
-            LogF("no pude enganchar %s", o.nombre);
+            LogF("couldn't hook %s", o.nombre);
         }
     }
-    Log("hooks de input instalados");
+    Log("input hooks installed");
 }
 
 static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
-    // Hay dos caminos de entrada: este mensaje y el sondeo de GetAsyncKeyState
-    // en RevisarToggle(). En algunas maquinas el sondeo nunca ve la tecla, asi
-    // que aca se deja el pedido anotado y alla se resuelve; un cooldown evita
-    // el doble disparo cuando llegan los dos.
+    // There are two input paths: this message and the GetAsyncKeyState poll in
+    // RevisarToggle(). On some machines the poll never sees the key, so the
+    // request is noted here and handled there; a cooldown avoids a double toggle
+    // when both arrive.
     if (msg == WM_KEYDOWN && wp == (WPARAM)TeclaToggle()) {
         g_toggleSolicitado = true;
         return 0;
@@ -283,9 +283,9 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
 }
 
 
-// El render target se pierde en cada ResizeBuffers y puede fallar en el primer
-// frame. Antes se creaba una sola vez en la init: si eso fallaba, el overlay
-// quedaba mudo para siempre sin decir nada. Ahora se reintenta por frame.
+// The render target is lost on every ResizeBuffers and can fail on the first
+// frame. It used to be created once at init: if that failed, the overlay stayed
+// silent forever without saying anything. Now it is retried every frame.
 static void AsegurarRenderTarget(IDXGISwapChain *swap) {
     if (g_rtv || !g_device) {
         return;
@@ -297,7 +297,7 @@ static void AsegurarRenderTarget(IDXGISwapChain *swap) {
     }
     static bool avisado = false;
     if (!g_rtv && !avisado) {
-        Log("todavia sin render target; se reintenta cada frame");
+        Log("no render target yet; retrying every frame");
         avisado = true;
     }
 }
@@ -311,7 +311,7 @@ static void InitImGui(IDXGISwapChain *swap) {
     if (FAILED(swap->GetDevice(__uuidof(ID3D11Device), (void **)&g_device))) {
         static bool avisado = false;
         if (!avisado) {
-            Log("no pude sacar el device del swapchain");
+            Log("couldn't get the device from the swapchain");
             avisado = true;
         }
         return;
@@ -322,17 +322,17 @@ static void InitImGui(IDXGISwapChain *swap) {
     DXGI_SWAP_CHAIN_DESC desc = {};
     swap->GetDesc(&desc);
     g_window = desc.OutputWindow;
-    LogF("ventana del swapchain = %p", (void *)g_window);
+    LogF("swapchain window = %p", (void *)g_window);
 
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
     io.IniFilename = nullptr;
     ImGui::StyleColorsDark();
 
-    // La fuente por defecto de imgui es ProggyClean: 13px y solo ASCII, asi que
-    // a 1080p queda ilegible y no puede dibujar la estrella. Cargamos Segoe UI y
-    // le fusionamos Segoe UI Symbol solo para el glifo U+2605, que es la marca
-    // que usa el juego para las armas maximizadas.
+    // imgui's default font is ProggyClean: 13px and ASCII only, so at 1080p it
+    // is unreadable and can't draw the star. Segoe UI is loaded instead, with
+    // Segoe UI Symbol merged in just for U+2605, the mark the game uses for
+    // maxed weapons.
     ImFont *base = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\segoeui.ttf", 16.0f);
     if (base) {
         static const ImWchar rangoEstrella[] = {0x2605, 0x2606, 0};
@@ -340,15 +340,15 @@ static void InitImGui(IDXGISwapChain *swap) {
         cfg.MergeMode = true;
         if (!io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\seguisym.ttf", 16.0f, &cfg,
                                           rangoEstrella)) {
-            Log("no pude fusionar el simbolo de estrella");
+            Log("couldn't merge the star symbol");
         }
     } else {
-        // Sin la fuente del sistema seguimos con la de imgui: se ve peor pero anda.
-        Log("no pude cargar segoeui.ttf, sigo con la fuente por defecto");
+        // Without the system font, imgui's own: it looks worse but works.
+        Log("couldn't load segoeui.ttf, using the default font");
     }
     ui::LoadFonts();
 
-    // io.FontGlobalScale se movio a style.FontScaleMain en imgui 1.92.
+    // io.FontGlobalScale moved to style.FontScaleMain in imgui 1.92.
     const float escala = desc.BufferDesc.Height >= 1440 ? 2.0f : 1.6f;
     g_escala = escala;
     ImGui::GetStyle().FontScaleMain = escala;
@@ -362,19 +362,18 @@ static void InitImGui(IDXGISwapChain *swap) {
     Log("imgui inicializado");
 }
 
-// El toggle por WM_KEYDOWN depende de que el juego despache los mensajes a la
-// ventana, y EDF6 los procesa en su propio loop de PeekMessage. Por eso ademas
-// se sondea la tecla en cada frame: GetAsyncKeyState no pasa por la cola y no
-// esta enganchada, asi que funciona igual.
-// Se compara por PROCESO y no por handle de ventana: el juego puede tener en
-// foco una ventana distinta a la del swapchain segun el modo de pantalla o las
-// capas que tenga inyectadas, y comparando handles el toggle quedaba muerto para
-// siempre. El objetivo del filtro es solo evitar que la tecla dispare mientras
-// estas en otra aplicacion.
+// The WM_KEYDOWN toggle depends on the game dispatching messages to the window,
+// and EDF6 processes them in its own PeekMessage loop. That's why the key is also
+// polled every frame: GetAsyncKeyState doesn't go through the queue and isn't
+// hooked, so it works anyway.
+// The check is by PROCESS, not by window handle: the game may have a different
+// window focused than the swapchain's depending on the display mode or injected
+// layers, and comparing handles left the toggle dead forever. The filter is only
+// meant to keep the key from firing while you are in another application.
 
-// Nombre del ejecutable que esta adelante. Solo para el log: cuando el filtro
-// falla, esto es lo unico que distingue "no tenias el juego adelante" de "esta
-// maquina no lo reporta".
+// Name of the executable in front. Only for the log: when the filter fails,
+// this is the only thing that tells "the game wasn't in front" apart from "this
+// machine doesn't report it".
 static std::string ProcesoDeFoco(DWORD pid) {
     HANDLE h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
     if (!h) {
@@ -390,14 +389,14 @@ static std::string ProcesoDeFoco(DWORD pid) {
     return barra ? barra + 1 : ruta;
 }
 
-// Cuanto se espera antes de dar el filtro por inservible.
+// How long to wait before giving up on the filter.
 static const ULONGLONG ESPERA_FOCO_MS = 8000;
 
-// En la maquina de un tester GetForegroundWindow nunca devolvio una ventana del
-// juego, con lo cual el filtro daba false en todos los frames y el overlay no
-// abria nunca. Como el filtro es una comodidad y no una necesidad, si en los
-// primeros segundos de partida no vemos ni una vez a este proceso adelante,
-// asumimos que el dato no sirve en esta maquina y lo dejamos de mirar.
+// On a tester's machine GetForegroundWindow never returned a game window, so the
+// filter was false every frame and the overlay never opened. Since the filter is
+// a convenience and not a need, if this process isn't seen in front even once in
+// the first seconds of play, the data is assumed useless on this machine and the
+// filter stops being checked.
 static bool JuegoEnFoco() {
     static bool filtro = true;
     static bool visto = false;
@@ -421,8 +420,8 @@ static bool JuegoEnFoco() {
         desde = GetTickCount64();
     }
     if (!visto && GetTickCount64() - desde > ESPERA_FOCO_MS) {
-        LogF("el filtro de foco no sirve en esta maquina: adelante esta %s (pid %lu) y nunca "
-             "vi este proceso (pid %lu) adelante. Lo apago, la tecla anda igual",
+        LogF("the focus filter doesn't work on this machine: %s (pid %lu) is in front and this "
+             "process (pid %lu) never was. Turning it off; the key works anyway",
              ProcesoDeFoco(pid).c_str(), pid, GetCurrentProcessId());
         filtro = false;
         return true;
@@ -432,10 +431,10 @@ static bool JuegoEnFoco() {
 
 static bool g_algunaTecla = false;
 
-// Barre todos los codigos de tecla mientras no se haya visto ninguna. Contesta
-// la pregunta que ningun otro log contesta: si GetAsyncKeyState sirve para algo
-// en este proceso. Si nunca imprime, el teclado no llega por esa via y da lo
-// mismo que tecla este configurada. Solo se registra la primera tecla vista.
+// Sweeps every key code while none has been seen. It answers what no other log
+// line does: whether GetAsyncKeyState works at all in this process. If it never
+// prints, the keyboard doesn't arrive that way and the configured key doesn't
+// matter. Only the first key seen is logged.
 static void EscanearTeclado() {
     static bool visto = false;
     static unsigned long long proximo = 0;
@@ -449,22 +448,22 @@ static void EscanearTeclado() {
     proximo = t + 100;
     if (g_teclaEspiada) {
         visto = true;
-        Log("0b. la tecla llega por la lectura que hace el propio juego");
+        Log("0b. the key arrives through the game's own keyboard read");
         return;
     }
     for (int vk = 0x08; vk <= 0xFE; vk++) {
         if (GetAsyncKeyState(vk) & 0x8000) {
             visto = true;
-            LogF("0b. el teclado SI responde: primera tecla vista 0x%02X (la configurada es 0x%02X)",
+            LogF("0b. the keyboard DOES respond: first key seen 0x%02X (configured one is 0x%02X)",
                  vk, TeclaToggle());
             return;
         }
     }
 }
 
-// Latido mientras no se detecto ninguna tecla: prueba que el bucle corre y que
-// el foco no lo esta frenando. Sin esto, "no pasa nada" y "no llega la tecla"
-// se ven igual en el log.
+// Heartbeat while no key has been detected: proves the loop runs and that focus
+// isn't holding it back. Without it, "nothing happens" and "the key doesn't
+// arrive" look the same in the log.
 static void Latido(bool enFoco) {
     static unsigned long long proximo = 0;
     const unsigned long long t = GetTickCount64();
@@ -474,11 +473,11 @@ static void Latido(bool enFoco) {
     static unsigned long long framesPrevios = 0;
     const unsigned long long frames = g_frames;
     if (proximo) {
-        LogF("0. sondeando: %llu frames en los ultimos 10s%s. Tecla 0x%02X sin detectar, "
-             "el juego %s el teclado",
+        LogF("0. polling: %llu frames in the last 10s%s. Key 0x%02X not detected, "
+             "the game %s the keyboard",
              frames - framesPrevios,
-             (frames == framesPrevios && g_imguiReady) ? "  <-- NO NOS LLAMAN A DIBUJAR" : "",
-             TeclaToggle(), g_juegoLeeTeclado ? "SI lee" : "NO lee");
+             (frames == framesPrevios && g_imguiReady) ? "  <-- WE ARE NOT BEING CALLED TO DRAW" : "",
+             TeclaToggle(), g_juegoLeeTeclado ? "DOES read" : "does NOT read");
     }
     framesPrevios = frames;
     proximo = t + 10000;
@@ -492,7 +491,7 @@ static const char *PulsacionNueva(int vk, bool espiada, bool porMensaje, bool &a
     if (!porSondeo && !porMensaje) {
         return nullptr;
     }
-    return !porSondeo ? "mensaje de ventana" : (porApi ? "sondeo directo" : "lectura del propio juego");
+    return !porSondeo ? "window message" : (porApi ? "direct poll" : "the game's own read");
 }
 
 static unsigned long long MsDesde(unsigned long long &ultimo) {
@@ -540,9 +539,9 @@ static void RevisarToggle() {
     static bool anteriorModulo[kMaxModules] = {};
     static unsigned long long ultimoToggleModulo[kMaxModules] = {};
 
-    // Un WM_KEYDOWN solo llega si la ventana tiene el foco de teclado de verdad,
-    // asi que ese camino no pasa por el filtro. En las maquinas donde
-    // GetForegroundWindow miente, es el unico que queda.
+    // A WM_KEYDOWN only arrives if the window really has keyboard focus, so that
+    // path skips the filter. On machines where GetForegroundWindow lies, it's the
+    // only one left.
     const bool porMensaje = g_toggleSolicitado.exchange(false);
     const int modulos = ModuleCount();
     bool porMensajeModulo[kMaxModules] = {};
@@ -556,14 +555,14 @@ static void RevisarToggle() {
     Latido(enFoco);
 
     if (!porMensaje && !algunModuloPorMensaje && !enFoco) {
-        // Se avisa una sola vez: si el overlay no abre, este renglon separa
-        // "no detecto el foco" de "no me llega la tecla".
+        // Logged only once: if the overlay doesn't open, this line separates
+        // "focus not detected" from "the key doesn't arrive".
         if (!avisadoFoco) {
             HWND foco = GetForegroundWindow();
             DWORD pid = 0;
             GetWindowThreadProcessId(foco, &pid);
-            LogF("foco: adelante esta %s (%p, pid %lu), no este proceso (pid %lu). "
-                 "Si el overlay no abre por esto, pone foco=0 en Mods\\Compendium\\config.ini",
+            LogF("focus: %s (%p, pid %lu) is in front, not this process (pid %lu). "
+                 "If the overlay doesn't open because of this, set foco=0 in Mods\\Compendium\\config.ini",
                  ProcesoDeFoco(pid).c_str(), (void *)foco, pid, GetCurrentProcessId());
             avisadoFoco = true;
         }
@@ -574,20 +573,20 @@ static void RevisarToggle() {
         return;
     }
     if (!avisado) {
-        LogF("tecla de toggle: 0x%02X (VK); cambiala con Mods\\Compendium\\config.ini",
+        LogF("toggle key: 0x%02X (VK); change it in Mods\\Compendium\\config.ini",
              TeclaToggle());
         avisado = true;
     }
 
     if (const char *camino = PulsacionNueva(TeclaToggle(), g_teclaEspiada, porMensaje, anterior)) {
         g_algunaTecla = true;
-        LogF("1. tecla detectada por %s", camino);
+        LogF("1. key detected by %s", camino);
         const unsigned long long delta = MsDesde(ultimoToggle);
         if (delta < 250) {
             LogF("2. descartada: hubo otra hace %llu ms", delta);
         } else {
             AlternarCompendium();
-            LogF("2. overlay -> %s", g_visible ? "abierto" : "cerrado");
+            LogF("2. overlay -> %s", g_visible ? "open" : "closed");
         }
     }
 
@@ -602,7 +601,7 @@ static void RevisarToggle() {
             g_algunaTecla = true;
             const unsigned long long delta = MsDesde(ultimoToggleModulo[i]);
             if (delta < 250) {
-                LogF("modulos: tecla de %s por %s descartada, hubo otra hace %llu ms", m->name, camino, delta);
+                LogF("modules: %s key by %s ignored, another one %llu ms ago", m->name, camino, delta);
             } else {
                 if (conPanel) {
                     AlternarPanelModulo(i);
@@ -610,7 +609,7 @@ static void RevisarToggle() {
                 if (m->onToggle) {
                     m->onToggle();
                 }
-                LogF("modulos: tecla de %s por %s%s", m->name, camino,
+                LogF("modules: %s key by %s%s", m->name, camino,
                      conPanel ? (g_panelModulo == i ? ", panel open" : ", panel closed") : "");
             }
         }
@@ -628,15 +627,15 @@ static void FrameOverlay(IDXGISwapChain *swap) {
     if (AlgunPanelVisible() && (!g_imguiReady || !g_rtv)) {
         static bool avisadoSinDibujo = false;
         if (!avisadoSinDibujo) {
-            LogF("3. overlay abierto pero NO se puede dibujar: imgui %s, render target %s",
-                 g_imguiReady ? "ok" : "sin inicializar", g_rtv ? "ok" : "ausente");
+            LogF("3. overlay open but it CAN'T draw: imgui %s, render target %s",
+                 g_imguiReady ? "ok" : "not initialized", g_rtv ? "ok" : "missing");
             avisadoSinDibujo = true;
         }
     }
     if (g_imguiReady && (AlgunPanelVisible() || toast || modulos) && g_rtv) {
         static bool avisadoDibujo = false;
         if (!avisadoDibujo) {
-            Log("3. primer frame del overlay dibujado");
+            Log("3. first overlay frame drawn");
             avisadoDibujo = true;
         }
         g_enImGui = true;
@@ -672,11 +671,11 @@ static void FrameOverlay(IDXGISwapChain *swap) {
     }
 }
 
-// Los hooks de dibujado van en la vtable del swapchain (un puntero de datos) y
-// no como salto al principio de la funcion, y se instalan DESPUES de que el
-// overlay de Steam haya parcheado Present (ver HiloInstalar). Hecho antes, Steam
-// lee nuestro puntero como si fuera la funcion original y su cadena nos vuelve a
-// llamar desde adentro de Present: ciclo infinito y pantalla en blanco.
+// The drawing hooks go in the swapchain's vtable (a data pointer), not as a jump
+// at the start of the function, and they are installed AFTER the Steam overlay
+// has patched Present (see HiloInstalar). Done before, Steam reads our pointer as
+// if it were the original function and its chain calls us again from inside
+// Present: infinite loop and a white screen.
 static void **g_vtbl = nullptr;
 
 static bool LeerBytes(void *dir, unsigned char *out, SIZE_T n) {
@@ -684,13 +683,13 @@ static bool LeerBytes(void *dir, unsigned char *out, SIZE_T n) {
     return ReadProcessMemory(GetCurrentProcess(), dir, out, n, &leidos) && leidos == n;
 }
 
-// Modulo que contiene una direccion, para el log.
+// Module that contains an address, for the log.
 static std::string ModuloDe(const void *dir) {
     HMODULE m = nullptr;
     if (!GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
                                 GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
                             (LPCSTR)dir, &m) || !m) {
-        return "(memoria fuera de un modulo)";
+        return "(memory outside any module)";
     }
     char ruta[MAX_PATH] = {0};
     GetModuleFileNameA(m, ruta, MAX_PATH);
@@ -713,8 +712,8 @@ static const int SLOT_RESIZE = 13;
 static const int SLOT_PRESENT1 = 22;
 static bool g_hayPresent1 = true;
 
-// Present y Present1 son entradas distintas de la vtable: el juego puede usar
-// cualquiera. La guarda evita dibujar dos veces si una llama a la otra.
+// Present and Present1 are different vtable entries: the game may use either.
+// The guard avoids drawing twice if one calls the other.
 typedef HRESULT(__stdcall *Present1Fn)(IDXGISwapChain1 *, UINT, UINT, const DXGI_PRESENT_PARAMETERS *);
 static Present1Fn oPresent1 = nullptr;
 static thread_local int g_profundidadPresent = 0;
@@ -740,14 +739,14 @@ static HRESULT __stdcall hkPresent1(IDXGISwapChain1 *swap, UINT sync, UINT flags
     return hr;
 }
 
-// Vigilante: si un slot dejo de apuntar a nosotros y ya no llegan frames, alguien
-// lo piso sin encadenarnos y se repone. Si los frames siguen llegando no se toca.
+// Watchdog: if a slot stopped pointing at us and frames stopped arriving, someone
+// overwrote it without chaining us and it is restored. If frames keep coming it's left alone.
 static void RevisarSlot(const char *nombre, int slot, void *nuestro, bool parado) {
     void *actual = g_vtbl[slot];
     if (actual == nuestro || !parado) {
         return;
     }
-    LogF("slot de %s pisado por %s y sin frames: se repone", nombre, ModuloDe(actual).c_str());
+    LogF("%s slot overwritten by %s and no frames: restoring it", nombre, ModuloDe(actual).c_str());
     PonerSlot(slot, nuestro);
 }
 
@@ -821,7 +820,7 @@ static bool VTableDeSwapChain(void ***vtblOut) {
     IDXGISwapChain1 *swap1 = nullptr;
     if (SUCCEEDED(swap->QueryInterface(__uuidof(IDXGISwapChain1), (void **)&swap1)) && swap1) {
         if (*reinterpret_cast<void ***>(swap1) != vtbl) {
-            Log("IDXGISwapChain1 tiene otra vtable: no toco el slot de Present1");
+            Log("IDXGISwapChain1 has another vtable: leaving the Present1 slot alone");
             g_hayPresent1 = false;
         }
         swap1->Release();
@@ -835,11 +834,11 @@ static bool VTableDeSwapChain(void ***vtblOut) {
     return true;
 }
 
-// Instalar los hooks de la vtable ANTES que el overlay de Steam hace que Steam lea
-// nuestro puntero como si fuera la funcion original de dxgi, y su cadena termina
-// llamandonos de vuelta desde adentro de Present (ciclo infinito, pantalla en
-// blanco). Si nos enganchamos despues de que Steam parchee Present, su hook ya
-// apunta a su propio trampolin y nosotros solo encadenamos hacia el.
+// Installing the vtable hooks BEFORE the Steam overlay makes Steam read our
+// pointer as if it were dxgi's original function, and its chain ends up calling
+// us back from inside Present (infinite loop, white screen). Hooking after Steam
+// patches Present, its hook already points at its own trampoline and we just
+// chain to it.
 static bool Parcheada(void *dir, const unsigned char *original) {
     unsigned char ahora[16] = {};
     return LeerBytes(dir, ahora, 16) && memcmp(ahora, original, 16) != 0;
@@ -850,14 +849,14 @@ static void InstalarVTable() {
     oResizeBuffers = (ResizeBuffersFn)g_vtbl[SLOT_RESIZE];
     oPresent1 = (Present1Fn)g_vtbl[SLOT_PRESENT1];
     if (!PonerSlot(SLOT_PRESENT, (void *)&hkPresent)) {
-        Log("no pude escribir el slot de Present");
+        Log("couldn't write the Present slot");
         return;
     }
     PonerSlot(SLOT_RESIZE, (void *)&hkResizeBuffers);
     if (g_hayPresent1) {
         PonerSlot(SLOT_PRESENT1, (void *)&hkPresent1);
     }
-    Log("hooks instalados en la vtable, esperando el primer frame");
+    Log("hooks installed in the vtable, waiting for the first frame");
     CreateThread(nullptr, 0, HiloVigilante, nullptr, 0, nullptr);
 }
 
@@ -866,26 +865,26 @@ static DWORD WINAPI HiloInstalar(LPVOID) {
     unsigned char original[16] = {};
     LeerBytes(funcion, original, 16);
 
-    // Steam se inyecta al arrancar el proceso. Si a los 5 s no esta, no hay a quien esperar.
+    // Steam injects itself at process start. If it isn't there after 5 s, there's nobody to wait for.
     for (int i = 0; i < 50 && !GetModuleHandleA("GameOverlayRenderer64.dll"); i++) {
         Sleep(100);
     }
     if (!GetModuleHandleA("GameOverlayRenderer64.dll")) {
-        Log("no hay overlay de Steam cargado: engancho ya");
+        Log("no Steam overlay loaded: hooking now");
         InstalarVTable();
         return 0;
     }
-    Log("overlay de Steam presente: espero a que enganche Present antes de enganchar yo");
+    Log("Steam overlay present: waiting for it to hook Present before hooking");
 
-    // Steam parchea en el primer frame. Se espera el parche y que quede estable.
+    // Steam patches on the first frame. Wait for the patch and for it to settle.
     int estables = 0;
-    for (int i = 0; i < 200; i++) {  // hasta 20 s
+    for (int i = 0; i < 200; i++) {  // up to 20 s
         Sleep(100);
         if (Parcheada(funcion, original)) {
-            if (++estables >= 20) {  // 2 s sin cambios despues del parche
+            if (++estables >= 20) {  // 2 s without changes after the patch
                 unsigned char b[16] = {};
                 LeerBytes(funcion, b, 16);
-                LogF("Present parcheado por otro (%02X %02X %02X %02X %02X ...): engancho ahora", b[0],
+                LogF("Present patched by someone else (%02X %02X %02X %02X %02X ...): hooking now", b[0],
                      b[1], b[2], b[3], b[4]);
                 InstalarVTable();
                 return 0;
@@ -894,7 +893,7 @@ static DWORD WINAPI HiloInstalar(LPVOID) {
             estables = 0;
         }
     }
-    Log("Steam no parcheo Present en 20 s (overlay desactivado?): engancho igual");
+    Log("Steam didn't patch Present within 20 s (overlay disabled?): hooking anyway");
     InstalarVTable();
     return 0;
 }
@@ -911,10 +910,10 @@ void InitOverlay() {
     if (!VTableDeSwapChain(&g_vtbl)) {
         return;
     }
-    LogF("vtable del swapchain = %p: Present = %p, ResizeBuffers = %p, Present1 = %p",
+    LogF("swapchain vtable = %p: Present = %p, ResizeBuffers = %p, Present1 = %p",
          (void *)g_vtbl, g_vtbl[SLOT_PRESENT], g_vtbl[SLOT_RESIZE], g_vtbl[SLOT_PRESENT1]);
 
-    // MinHook queda solo para las funciones de user32 del bloqueo de input.
+    // MinHook is only left for the user32 functions of the input block.
     if (MH_Initialize() != MH_OK) {
         Log("MH_Initialize fallo");
         return;

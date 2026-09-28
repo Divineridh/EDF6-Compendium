@@ -1,24 +1,24 @@
-"""Regenera data/missions.tsv desde el Equipment Farming Tool de Beardmo.
+"""Regenerates data/missions.tsv from Beardmo's Equipment Farming Tool.
 
-La tabla derivada ya esta en el repo; esto solo hace falta para rehacerla.
-La planilla no se redistribuye: bajala como .xlsx a data/finder.xlsx.
+The derived table is already in the repo; this is only needed to rebuild it.
+The spreadsheet isn't redistributed: download it as .xlsx to data/finder.xlsx.
 
 https://docs.google.com/spreadsheets/d/17KuXJJOhsRqB0Fi82DLdd0p5hU79Z_OcLRGp8_xTF1A
 
-La pestana "Mission Data" trae, por mision y dificultad, la ventana de niveles de
-arma que puede dropear y la probabilidad por caja.
+The "Mission Data" tab gives, per mission and difficulty, the window of weapon
+levels it can drop and the chance per crate.
 
-Regla de elegibilidad: `min <= nivel <= max`, en las cuatro dificultades.
+Eligibility rule: `min <= level <= max`, on all four difficulties.
 
-OJO: la hoja lista, en su columna de Inferno, misiones donde el arma no puede
-caer — se comporta como si en Inferno no hubiera techo. Es un error de la hoja.
-La prueba es aritmetica y no depende de creerle a nadie: como cada caja elige
-uniforme del pool, `1 / probabilidad` tiene que dar la cantidad de armas del
-rango. Con el techo real coincide exacto en 187 de las 202 filas de Inferno
-(376 y 376, 362 y 362, 351 y 351...); ignorando el techo da 977 contra 357.
+CAREFUL: in its Inferno column the sheet lists missions where the weapon can't
+drop; it behaves as if Inferno had no ceiling. That's a mistake in the sheet.
+The proof is arithmetic and doesn't depend on trusting anyone: since each crate
+picks uniformly from the pool, `1 / chance` has to equal the number of weapons
+in the range. With the real ceiling it matches exactly in 187 of the 202 Inferno
+rows (376 and 376, 362 and 362, 351 and 351...); ignoring it gives 977 against 357.
 
-Calibrar contra la salida de la hoja habria propagado el error; calibrar contra
-el tamano del pool lo detecta.
+Calibrating against the sheet's output would have spread the mistake;
+calibrating against the pool size catches it.
 """
 
 import os
@@ -32,7 +32,7 @@ RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LIBRO = os.path.join(RAIZ, "data", "finder.xlsx")
 SALIDA = os.path.join(RAIZ, "data", "missions.tsv")
 
-# etiqueta -> (col min, col max, col probabilidad)
+# label -> (min column, max column, chance column)
 DIFICULTADES = [
     ("Normal", 3, 4, 11),
     ("Hard", 5, 6, 12),
@@ -78,7 +78,7 @@ def main():
     os.makedirs(os.path.dirname(SALIDA), exist_ok=True)
     with open(SALIDA, "w", encoding="utf-8", newline="\n") as fh:
         fh.write("\n".join(filas) + "\n")
-    print("%s: %d combinaciones mision/dificultad, de %d misiones" % (
+    print("%s: %d mission/difficulty combinations, from %d missions" % (
         SALIDA, len(filas), len(filas_hoja)))
 
 
