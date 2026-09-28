@@ -3,6 +3,7 @@
 #include <atomic>
 #include <cfloat>
 #include <mutex>
+#include <vector>
 
 #include "imgui.h"
 
@@ -101,11 +102,86 @@ void HostTextExSize(float size, int font, float spacing, const char *utf8, float
     *height = s.y;
 }
 
+void *HostImguiContext() {
+    return ImGui::GetCurrentContext();
+}
+
+void HostImguiAllocators(Edf6ImguiAllocFn *alloc, Edf6ImguiFreeFn *free, void **userData) {
+    ImGuiMemAllocFunc a = nullptr;
+    ImGuiMemFreeFunc f = nullptr;
+    ImGui::GetAllocatorFunctions(&a, &f, userData);
+    *alloc = a;
+    *free = f;
+}
+
+void *HostImguiFont(int font) {
+    return FontById(font);
+}
+
+// Filled once by MarkCatalogReady and read-only afterwards, so modules can query it from any
+// thread without locking.
+std::atomic<bool> g_catalogReady{false};
+std::vector<const Weapon *> g_weaponByIndex;
+std::vector<const char *> g_classOfIndex;
+
+int HostWeaponCount() {
+    return g_catalogReady.load(std::memory_order_acquire) ? (int)g_weaponByIndex.size() : 0;
+}
+
+int HostWeapon(int index, Edf6Weapon *out) {
+    if (index < 0 || index >= HostWeaponCount() || !g_weaponByIndex[index] || !out) {
+        return 0;
+    }
+    const Weapon *w = g_weaponByIndex[index];
+    out->index = w->index;
+    out->name = w->name.c_str();
+    out->className = g_classOfIndex[index];
+    out->category = w->categoryName.c_str();
+    out->level = w->level;
+    out->owned = w->owned ? 1 : 0;
+    out->starred = w->starred ? 1 : 0;
+    return 1;
+}
+
 const Edf6OverlayHost g_host = {
-    EDF6_OVERLAY_API_VERSION, &HostLog,     &HostScale,     &HostScreenSize, &HostFillRect,
-    &HostStrokeRect,          &HostText,    &HostTextSize,  &HostTextEx,     &HostTextExSize,
+    EDF6_OVERLAY_API_VERSION, &HostLog,          &HostScale,           &HostScreenSize, &HostFillRect,
+    &HostStrokeRect,          &HostText,         &HostTextSize,        &HostTextEx,     &HostTextExSize,
+    &HostImguiContext,        &HostImguiAllocators, &HostImguiFont,    &HostWeaponCount, &HostWeapon,
 };
 
+bool HasPanel(const Edf6OverlayModule *m) {
+    return m->version >= 3 && m->panel;
+}
+
+}
+
+void MarkCatalogReady() {
+    int maxIndex = -1;
+    for (const ClassData &c : GetCatalog().classes) {
+        for (const Weapon &w : c.weapons) {
+            maxIndex = w.index > maxIndex ? w.index : maxIndex;
+        }
+    }
+    g_weaponByIndex.assign(maxIndex + 1, nullptr);
+    g_classOfIndex.assign(maxIndex + 1, "");
+    for (const ClassData &c : GetCatalog().classes) {
+        for (const Weapon &w : c.weapons) {
+            g_weaponByIndex[w.index] = &w;
+            g_classOfIndex[w.index] = c.name.c_str();
+        }
+    }
+    g_catalogReady.store(true, std::memory_order_release);
+}
+
+bool ModuleHasPanel(int index) {
+    return HasPanel(g_modules[index]);
+}
+
+void DrawModulePanel(int index, float scale, bool &open) {
+    g_scale = scale;
+    int stillOpen = 1;
+    g_modules[index]->panel(&g_host, &stillOpen);
+    open = stillOpen != 0;
 }
 
 int ModuleCount() {
@@ -147,6 +223,14 @@ extern "C" __declspec(dllexport) int Edf6Overlay_Register(const Edf6OverlayModul
              module->name ? module->name : "?", module->version, EDF6_OVERLAY_API_VERSION);
         return 0;
     }
+    if (HasPanel(module) &&
+        (module->imguiVersion != IMGUI_VERSION_NUM || module->imguiLayout != EDF6_IMGUI_LAYOUT)) {
+        LogF("modulos: %s was built with imgui %d (layout %08X) and the Compendium with %d (layout %08X); "
+             "not registered",
+             module->name ? module->name : "?", module->imguiVersion, module->imguiLayout, IMGUI_VERSION_NUM,
+             EDF6_IMGUI_LAYOUT);
+        return 0;
+    }
     std::lock_guard<std::mutex> lock(g_registerMutex);
     const int count = g_count.load(std::memory_order_relaxed);
     if (count >= kMaxModules) {
@@ -156,7 +240,7 @@ extern "C" __declspec(dllexport) int Edf6Overlay_Register(const Edf6OverlayModul
     g_modules[count] = module;
     g_count.store(count + 1, std::memory_order_release);
     *host = &g_host;
-    LogF("modulos: registrado %s (API %d), tecla 0x%02X", module->name ? module->name : "?", module->version,
-         module->toggleKey);
+    LogF("modulos: registrado %s (API %d), tecla 0x%02X%s", module->name ? module->name : "?", module->version,
+         module->toggleKey, HasPanel(module) ? ", con panel" : "");
     return 1;
 }

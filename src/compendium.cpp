@@ -8,7 +8,7 @@
 #include <PluginAPI.h>
 
 #include "compendium.h"
-#include "loadouts.h"
+#include "modules.h"
 
 static Catalog g_catalog;
 
@@ -232,11 +232,6 @@ int TeclaToggle() {
     return tecla;
 }
 
-int TeclaLoadouts() {
-    static const int tecla = LeerTecla("tecla_loadouts", "loadouts_key", VK_F2, "loadouts");
-    return tecla;
-}
-
 // El filtro de foco evita que la tecla dispare mientras estas en otra
 // aplicacion, pero depende de que GetForegroundWindow devuelva una ventana de
 // este proceso, y hay maquinas donde eso no pasa nunca. Ademas de apagarse solo
@@ -377,14 +372,13 @@ static DWORD WINAPI MainThread(LPVOID) {
     // Si el save se puede leer, manda el: tiene el estado real y ademas incluye
     // armas que la pantalla de equipamiento oculta por el limite de nivel.
     TeclaToggle();
-    TeclaLoadouts();
     FiltroDeFoco();
     SondeoDirecto();
     MarcarFarmeables();
     LeerObtenidasDelSave();
     LoadWishlist();
+    MarkCatalogReady();
     InitOverlay();
-    InitLoadouts();
     return 0;
 }
 

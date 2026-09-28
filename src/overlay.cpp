@@ -18,7 +18,6 @@
 
 #include "compendium.h"
 #include "compendium_ui.h"
-#include "loadouts.h"
 #include "modules.h"
 #include "ui_kit.h"
 
@@ -37,14 +36,13 @@ static ID3D11RenderTargetView *g_rtv = nullptr;
 static HWND g_window = nullptr;
 static bool g_imguiReady = false;
 static std::atomic<bool> g_visible{false};
-static std::atomic<bool> g_loadoutsVisible{false};
+static std::atomic<int> g_panelModulo{-1};
 static std::atomic<unsigned long long> g_frames{0};
 static std::atomic<bool> g_toggleSolicitado{false};
-static std::atomic<bool> g_toggleLoadoutsSolicitado{false};
 static std::atomic<bool> g_toggleModuloSolicitado[kMaxModules];
 
 static bool AlgunPanelVisible() {
-    return g_visible || g_loadoutsVisible;
+    return g_visible || g_panelModulo >= 0;
 }
 
 
@@ -169,7 +167,6 @@ static POINT g_cursorCongelado = {0, 0};
 // que usa el juego: si el juego responde al teclado, esto responde tambien.
 // No hace falta ninguna API nueva ni un hook global.
 static std::atomic<bool> g_teclaEspiada{false};
-static std::atomic<bool> g_teclaLoadoutsEspiada{false};
 static std::atomic<bool> g_teclaModuloEspiada[kMaxModules];
 static std::atomic<bool> g_juegoLeeTeclado{false};
 
@@ -182,9 +179,6 @@ static SHORT WINAPI hkGetKeyState(int vk) {
     g_juegoLeeTeclado = true;
     if (vk == TeclaToggle()) {
         g_teclaEspiada = (r & 0x8000) != 0;
-    }
-    if (vk == TeclaLoadouts()) {
-        g_teclaLoadoutsEspiada = (r & 0x8000) != 0;
     }
     for (int i = 0; i < ModuleCount(); i++) {
         if (vk == ModuleAt(i)->toggleKey) {
@@ -204,10 +198,6 @@ static BOOL WINAPI hkGetKeyboardState(PBYTE estado) {
         const int vk = TeclaToggle();
         if (vk > 0 && vk < 256) {
             g_teclaEspiada = (estado[vk] & 0x80) != 0;
-        }
-        const int vkLoadouts = TeclaLoadouts();
-        if (vkLoadouts > 0 && vkLoadouts < 256) {
-            g_teclaLoadoutsEspiada = (estado[vkLoadouts] & 0x80) != 0;
         }
         for (int i = 0; i < ModuleCount(); i++) {
             const int vkModulo = ModuleAt(i)->toggleKey;
@@ -265,10 +255,6 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     // el doble disparo cuando llegan los dos.
     if (msg == WM_KEYDOWN && wp == (WPARAM)TeclaToggle()) {
         g_toggleSolicitado = true;
-        return 0;
-    }
-    if (msg == WM_KEYDOWN && wp == (WPARAM)TeclaLoadouts()) {
-        g_toggleLoadoutsSolicitado = true;
         return 0;
     }
     if (msg == WM_KEYDOWN) {
@@ -518,24 +504,39 @@ static unsigned long long MsDesde(unsigned long long &ultimo) {
     return delta;
 }
 
-static void AlternarPanel(std::atomic<bool> &propio, std::atomic<bool> &otro) {
-    const bool yaBloqueaba = AlgunPanelVisible();
-    propio = !propio;
-    if (propio) {
-        otro = false;
-        if (!yaBloqueaba && oGetCursorPos) {
-            oGetCursorPos(&g_cursorCongelado);
-        }
+// Only one panel is open at a time: opening one closes the other. The cursor is frozen for the
+// game when the first panel opens, not when switching between panels.
+static void CongelarCursorSiHaceFalta(bool yaBloqueaba) {
+    if (!yaBloqueaba && oGetCursorPos) {
+        oGetCursorPos(&g_cursorCongelado);
     }
+}
+
+static void AlternarCompendium() {
+    const bool yaBloqueaba = AlgunPanelVisible();
+    g_visible = !g_visible;
+    if (g_visible) {
+        g_panelModulo = -1;
+        CongelarCursorSiHaceFalta(yaBloqueaba);
+    }
+}
+
+static void AlternarPanelModulo(int indice) {
+    const bool yaBloqueaba = AlgunPanelVisible();
+    if (g_panelModulo == indice) {
+        g_panelModulo = -1;
+        return;
+    }
+    g_panelModulo = indice;
+    g_visible = false;
+    CongelarCursorSiHaceFalta(yaBloqueaba);
 }
 
 static void RevisarToggle() {
     static bool anterior = false;
-    static bool anteriorLoadouts = false;
     static bool avisado = false;
     static bool avisadoFoco = false;
     static unsigned long long ultimoToggle = 0;
-    static unsigned long long ultimoToggleLoadouts = 0;
     static bool anteriorModulo[kMaxModules] = {};
     static unsigned long long ultimoToggleModulo[kMaxModules] = {};
 
@@ -543,7 +544,6 @@ static void RevisarToggle() {
     // asi que ese camino no pasa por el filtro. En las maquinas donde
     // GetForegroundWindow miente, es el unico que queda.
     const bool porMensaje = g_toggleSolicitado.exchange(false);
-    const bool porMensajeLoadouts = g_toggleLoadoutsSolicitado.exchange(false);
     const int modulos = ModuleCount();
     bool porMensajeModulo[kMaxModules] = {};
     bool algunModuloPorMensaje = false;
@@ -555,7 +555,7 @@ static void RevisarToggle() {
     EscanearTeclado();
     Latido(enFoco);
 
-    if (!porMensaje && !porMensajeLoadouts && !algunModuloPorMensaje && !enFoco) {
+    if (!porMensaje && !algunModuloPorMensaje && !enFoco) {
         // Se avisa una sola vez: si el overlay no abre, este renglon separa
         // "no detecto el foco" de "no me llega la tecla".
         if (!avisadoFoco) {
@@ -568,7 +568,6 @@ static void RevisarToggle() {
             avisadoFoco = true;
         }
         anterior = false;
-        anteriorLoadouts = false;
         for (bool &a : anteriorModulo) {
             a = false;
         }
@@ -587,26 +586,15 @@ static void RevisarToggle() {
         if (delta < 250) {
             LogF("2. descartada: hubo otra hace %llu ms", delta);
         } else {
-            AlternarPanel(g_visible, g_loadoutsVisible);
+            AlternarCompendium();
             LogF("2. overlay -> %s", g_visible ? "abierto" : "cerrado");
-        }
-    }
-
-    if (const char *camino = PulsacionNueva(TeclaLoadouts(), g_teclaLoadoutsEspiada,
-                                            porMensajeLoadouts, anteriorLoadouts)) {
-        g_algunaTecla = true;
-        const unsigned long long delta = MsDesde(ultimoToggleLoadouts);
-        if (delta < 250) {
-            LogF("loadouts: tecla por %s descartada, hubo otra hace %llu ms", camino, delta);
-        } else {
-            AlternarPanel(g_loadoutsVisible, g_visible);
-            LogF("loadouts: tecla por %s, panel -> %s", camino, g_loadoutsVisible ? "abierto" : "cerrado");
         }
     }
 
     for (int i = 0; i < modulos; i++) {
         const Edf6OverlayModule *m = ModuleAt(i);
-        if (m->toggleKey <= 0 || !m->onToggle) {
+        const bool conPanel = ModuleHasPanel(i);
+        if (m->toggleKey <= 0 || (!m->onToggle && !conPanel)) {
             continue;
         }
         if (const char *camino =
@@ -616,8 +604,14 @@ static void RevisarToggle() {
             if (delta < 250) {
                 LogF("modulos: tecla de %s por %s descartada, hubo otra hace %llu ms", m->name, camino, delta);
             } else {
-                m->onToggle();
-                LogF("modulos: tecla de %s por %s", m->name, camino);
+                if (conPanel) {
+                    AlternarPanelModulo(i);
+                }
+                if (m->onToggle) {
+                    m->onToggle();
+                }
+                LogF("modulos: tecla de %s por %s%s", m->name, camino,
+                     conPanel ? (g_panelModulo == i ? ", panel open" : ", panel closed") : "");
             }
         }
     }
@@ -657,11 +651,13 @@ static void FrameOverlay(IDXGISwapChain *swap) {
                 g_visible = false;
             }
         }
-        if (g_loadoutsVisible) {
+        const int panel = g_panelModulo;
+        if (panel >= 0) {
             bool abierto = true;
-            DrawLoadoutsPanel(abierto, g_escala);
+            DrawModulePanel(panel, g_escala, abierto);
             if (!abierto) {
-                g_loadoutsVisible = false;
+                int esperado = panel;
+                g_panelModulo.compare_exchange_strong(esperado, -1);
             }
         }
         if (toast) {
