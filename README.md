@@ -30,6 +30,10 @@ python tools/paquete.py
 Deja el zip en `../builds/`. Se niega a empaquetar si algún `.cpp` es más nuevo que el DLL, para no
 distribuir un build viejo — que ya pasó una vez.
 
+Para un release público, generar antes el catálogo con `python tools/gen_tsv.py --sin-obtenidas`: la
+columna de obtenidas es el respaldo cuando el save no se puede leer, y sin esa opción se llena con
+las armas de quien arma el paquete.
+
 ## Generar los datos
 
 El overlay no lee el juego en vivo: consume TSVs generados desde los assets extraídos del `Root.cpk`

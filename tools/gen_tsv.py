@@ -46,10 +46,14 @@ def tier(w):
 
 def main():
     catalogo = json.load(open(CATALOGO, encoding="utf-8"))
-    ruta_obtenidas, tengo = obtenidas.cargar(RESPALDO_OBTENIDAS)
-    placeholder = tengo is None
-    if placeholder:
-        tengo = {w["name"] for w in catalogo if w["level"] <= 25}
+    sin_obtenidas = "--sin-obtenidas" in sys.argv
+    if sin_obtenidas:
+        ruta_obtenidas, tengo, placeholder = None, set(), False
+    else:
+        ruta_obtenidas, tengo = obtenidas.cargar(RESPALDO_OBTENIDAS)
+        placeholder = tengo is None
+        if placeholder:
+            tengo = {w["name"] for w in catalogo if w["level"] <= 25}
 
     cats = json.load(open(CATEGORIAS, encoding="utf-8"))
 
@@ -74,7 +78,10 @@ def main():
         fh.write("\n".join(filas) + "\n")
 
     print("escrito %s: %d armas" % (SALIDA, len(filas)))
-    print(obtenidas.informe(ruta_obtenidas, None if placeholder else tengo, RESPALDO_OBTENIDAS))
+    if sin_obtenidas:
+        print("  obtenidas: todas en 0 (--sin-obtenidas)")
+    else:
+        print(obtenidas.informe(ruta_obtenidas, None if placeholder else tengo, RESPALDO_OBTENIDAS))
 
 
 if __name__ == "__main__":
