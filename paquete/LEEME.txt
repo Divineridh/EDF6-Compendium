@@ -2,8 +2,7 @@ EDF6 Weapon Compendium
 ======================
 
 Overlay dentro del juego con las 1564 armas: cuales tenes, cuales te faltan,
-donde farmear cada una y a que mision conviene ir. Trae tambien un panel de
-loadouts para guardar y cargar equipamientos.
+donde farmear cada una y a que mision conviene ir.
 
 REQUISITO
 ---------
@@ -23,8 +22,8 @@ EDF6.exe. Queda asi:
     EARTH DEFENSE FORCE 6\Mods\Compendium\strats.tsv
     EARTH DEFENSE FORCE 6\Mods\Compendium\config.ini
 
-La wishlist (wishlist.txt) y los loadouts (loadouts.tsv) se crean solos en esa
-misma carpeta la primera vez que los usas.
+La wishlist (wishlist.txt) se crea sola en esa misma carpeta la primera vez
+que la usas.
 
 USO
 ---
@@ -84,8 +83,14 @@ de tus faltantes por nivel con el rango de esa mision marcado.
 
 LOADOUTS
 --------
-F2 abre el panel de loadouts. Guarda sets de 6 armas por clase con nombre y los
-carga cuando quieras, aunque sean de otra clase.
+Desde la 0.4.0 el panel de loadouts es un mod aparte, EDF6 Loadouts, que se
+cuelga del Compendium:
+
+    https://github.com/Divineridh/EDF6-Loadouts/releases
+
+Instalandolo, F2 abre el mismo panel de antes, y tus loadouts guardados se
+copian solos a Mods\Loadouts. Guarda sets de 6 armas por clase con nombre y
+los carga cuando quieras, aunque sean de otra clase.
 
   - Ctrl+S guarda lo que tiene equipado la clase que estas viendo;
   - Enter carga el elegido: escribe sus 6 armas y cambia la clase activa;
@@ -136,7 +141,6 @@ El numero de la ULTIMA etapa que aparezca dice donde se corta:
         render target. Probar en ventana o borderless en vez de pantalla
         completa exclusiva.
 
-La tecla de loadouts se cambia igual, con tecla_loadouts= en config.ini.
 
 LA TECLA SE BUSCA POR TRES CAMINOS
 ----------------------------------

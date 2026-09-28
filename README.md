@@ -96,23 +96,34 @@ ventana del juego, comprobado en dos máquinas distintas.
 ## Módulos
 
 Otras DLLs pueden colgarse del overlay sin engancharse ellas mismas a Present ni al input, que es
-lo que costó estabilizar. El contrato está en `src/edf6_overlay_api.h` (versión 2, C puro):
+lo que costó estabilizar. El contrato está en `src/edf6_overlay_api.h` (versión 3, C puro):
 
 - la DLL del módulo busca `EDF6Compendium.dll` y llama a su export `Edf6Overlay_Register` con un
-  `Edf6OverlayModule` (nombre, tecla, `onToggle`, `wantsDraw`, `draw`);
+  `Edf6OverlayModule` (nombre, tecla, `onToggle`, `wantsDraw`, `draw` y, desde la 3, `panel`);
 - el Compendium detecta la tecla por los mismos tres caminos que F1 y llama a `onToggle`;
 - en cada frame, si `wantsDraw` da distinto de cero, llama a `draw` con un `Edf6OverlayHost`:
-  rectángulos, texto, tamaño de pantalla, escala y el log. Desde la versión 2, el texto puede
-  elegir entre las fuentes de los paneles (normal, semibold, bold, etiqueta y monoespaciada) y
-  llevar espaciado entre letras.
+  rectángulos, texto con las fuentes de los paneles y espaciado entre letras (desde la 2), tamaño de
+  pantalla, escala y el log. Lo que dibuja va al fondo, debajo de los paneles.
+
+**Paneles (versión 3).** Un módulo con `panel` tiene una ventana propia, como el Compendium: su
+tecla la abre y la cierra, hay un solo panel abierto a la vez y, mientras está abierto, el
+Compendium le bloquea el input al juego. `panel` corre adentro del frame de imgui del Compendium, y
+el módulo dibuja con imgui sobre el contexto del anfitrión (`imguiContext`, `imguiAllocators`,
+`imguiFont`). Compartir imgui entre DLLs exige la misma versión y el mismo layout de sus
+estructuras: el módulo declara `IMGUI_VERSION_NUM` y `EDF6_IMGUI_LAYOUT`, y si no coinciden con los
+del Compendium no se registra y lo dice en el log, en vez de crashear. En la práctica, compilar el
+módulo contra el mismo commit de `deps/imgui`.
+
+La versión 3 también presta el catálogo: `weaponCount` y `weapon` dan nombre, clase, categoría,
+nivel y si la tenés o la tenés al máximo, desde cualquier hilo.
 
 La estructura del anfitrión solo crece al final, así que el Compendium acepta módulos de cualquier
 versión hasta la suya; un módulo que pide la versión N necesita un Compendium con la N o más nueva.
+Entran hasta 8 módulos:
 
-El módulo no usa imgui: compartir imgui entre DLLs obliga a la misma versión exacta y a compartir
-contexto y allocator. Lo que dibuja va al fondo, debajo de los paneles. Entran hasta 8 módulos.
-
-El primero es [EDF6-EnemyHp](../EDF6-EnemyHp), el contador de vida del último enemigo golpeado.
+- [EDF6-EnemyHp](https://github.com/Divineridh/EDF6-EnemyHp): la vida de los enemigos que golpeás.
+- [EDF6-Loadouts](https://github.com/Divineridh/EDF6-Loadouts): el panel de loadouts (F2), que vivía
+  adentro del Compendium hasta la 0.3.0.
 
 ## Diagnóstico
 

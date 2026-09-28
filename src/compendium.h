@@ -92,7 +92,6 @@ void LogF(const char *fmt, ...);
 std::string GamePath(const char *rel);
 
 int TeclaToggle();
-int TeclaLoadouts();
 
 // Si el filtro de foco esta habilitado. Se apaga con "foco=0" en config.ini para
 // las maquinas donde la ventana de adelante nunca es la del juego.

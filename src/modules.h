@@ -8,3 +8,6 @@ int ModuleCount();
 const Edf6OverlayModule *ModuleAt(int index);
 bool AnyModuleWantsDraw();
 void DrawModules(float scale);
+bool ModuleHasPanel(int index);
+void DrawModulePanel(int index, float scale, bool &open);
+void MarkCatalogReady();
