@@ -385,7 +385,7 @@ static DWORD WINAPI MainThread(LPVOID) {
 extern "C" BOOL __declspec(dllexport) EML6_Load(PluginInfo *pluginInfo) {
     pluginInfo->infoVersion = PluginInfo::MaxInfoVer;
     pluginInfo->name = "Weapon Compendium";
-    pluginInfo->version = PLUG_VER(0, 3, 0, 0);
+    pluginInfo->version = PLUG_VER(0, 4, 0, 0);
     LogF("EML6_Load llamado por el loader (build %s %s)", __DATE__, __TIME__);
     static bool arrancado = false;
     if (arrancado) {
