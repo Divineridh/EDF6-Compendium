@@ -18,6 +18,7 @@
 
 #include "compendium.h"
 #include "loadouts.h"
+#include "ui_kit.h"
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND, UINT, WPARAM, LPARAM);
 
@@ -1400,7 +1401,7 @@ static void InitImGui(IDXGISwapChain *swap) {
         // Sin la fuente del sistema seguimos con la de imgui: se ve peor pero anda.
         Log("no pude cargar segoeui.ttf, sigo con la fuente por defecto");
     }
-    LoadLoadoutsFonts();
+    ui::LoadFonts();
 
     // io.FontGlobalScale se movio a style.FontScaleMain en imgui 1.92.
     const float escala = desc.BufferDesc.Height >= 1440 ? 2.0f : 1.6f;

@@ -1,7 +1,6 @@
 #include <windows.h>
 
 #include <atomic>
-#include <cfloat>
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
@@ -17,6 +16,9 @@
 
 #include "compendium.h"
 #include "loadouts.h"
+#include "ui_kit.h"
+
+using namespace ui;
 
 namespace {
 
@@ -399,22 +401,6 @@ constexpr float kItemH = 56.0f;
 constexpr float kRowH = 45.0f;
 constexpr float kDesignScale = 0.8f;
 
-constexpr uint32_t kBg = 0x0B0E0C;
-constexpr uint32_t kLine = 0x242A26;
-constexpr uint32_t kSelected = 0x1A201C;
-constexpr uint32_t kText = 0xE8ECE9;
-constexpr uint32_t kSoft = 0xB7BEBA;
-constexpr uint32_t kMuted = 0x8C938F;
-constexpr uint32_t kFaint = 0x5A615D;
-constexpr uint32_t kGreen = 0x5ED17A;
-constexpr uint32_t kOnGreen = 0x0B1A10;
-constexpr uint32_t kAmber = 0xF0A73A;
-constexpr uint32_t kDiffRow = 0x1B1A13;
-constexpr uint32_t kRowLine = 0x1D221F;
-constexpr uint32_t kKeyLine = 0x3A413C;
-constexpr uint32_t kDanger = 0xFF8C73;
-constexpr uint32_t kMaxed = 0xFAC775;
-
 enum class Mode { Browse, Naming, Renaming, ConfirmDelete };
 
 struct PanelState {
@@ -428,170 +414,9 @@ struct PanelState {
 };
 
 PanelState g_ui;
-float g_k = 1.0f;
-ImFont *g_fontLabel = nullptr;
-ImFont *g_fontBold = nullptr;
-ImFont *g_fontSemi = nullptr;
-
-ImU32 Rgb(uint32_t hex, float alpha = 1.0f) {
-    return IM_COL32((hex >> 16) & 0xFF, (hex >> 8) & 0xFF, hex & 0xFF, (int)(alpha * 255.0f));
-}
-
-float D(float px) {
-    return px * g_k;
-}
-
-ImFont *FontOr(ImFont *f) {
-    return f ? f : ImGui::GetFont();
-}
-
-ImVec2 Measure(ImFont *f, float px, const char *t, const char *end = nullptr) {
-    return FontOr(f)->CalcTextSizeA(D(px), FLT_MAX, 0.0f, t, end);
-}
-
-void PaintText(ImDrawList *dl, ImFont *f, float px, ImVec2 p, uint32_t col, const char *t) {
-    dl->AddText(FontOr(f), D(px), p, Rgb(col), t);
-}
-
-int Utf8Length(unsigned char c) {
-    return c < 0x80 ? 1 : (c >> 5) == 0x6 ? 2 : (c >> 4) == 0xE ? 3 : 4;
-}
-
-float SpacedText(ImDrawList *dl, ImFont *f, float px, ImVec2 p, uint32_t col, const char *t, float spacing) {
-    const float start = p.x;
-    for (const char *c = t; *c;) {
-        const int n = Utf8Length((unsigned char)*c);
-        dl->AddText(FontOr(f), D(px), p, Rgb(col), c, c + n);
-        p.x += Measure(f, px, c, c + n).x + D(spacing);
-        c += n;
-    }
-    return p.x - start;
-}
-
-std::string Upper(const char *s) {
-    std::string out = s;
-    for (char &ch : out) {
-        if (ch >= 'a' && ch <= 'z') {
-            ch = (char)(ch - 'a' + 'A');
-        }
-    }
-    return out;
-}
-
-std::string FitText(ImFont *f, float px, const std::string &s, float maxWidth, bool &cut) {
-    cut = Measure(f, px, s.c_str()).x > maxWidth;
-    if (!cut) {
-        return s;
-    }
-    const std::string ellipsis = "\xE2\x80\xA6";
-    std::string t = s;
-    while (!t.empty()) {
-        size_t at = t.size() - 1;
-        while (at > 0 && ((unsigned char)t[at] & 0xC0) == 0x80) {
-            at--;
-        }
-        t.erase(at);
-        if (Measure(f, px, (t + ellipsis).c_str()).x <= maxWidth) {
-            break;
-        }
-    }
-    return t + ellipsis;
-}
-
-void FittedText(ImDrawList *dl, ImFont *f, float px, ImVec2 p, uint32_t col, const std::string &s, float maxWidth) {
-    bool cut = false;
-    const std::string shown = FitText(f, px, s, maxWidth, cut);
-    PaintText(dl, f, px, p, col, shown.c_str());
-    const ImVec2 size = Measure(f, px, shown.c_str());
-    if (cut && ImGui::IsMouseHoveringRect(p, ImVec2(p.x + size.x, p.y + size.y))) {
-        ImGui::SetTooltip("%s", s.c_str());
-    }
-}
-
-float KeyHint(ImDrawList *dl, ImVec2 p, const char *key, uint32_t text, uint32_t border) {
-    const ImVec2 size = Measure(g_fontLabel, 12.0f, key);
-    const float w = size.x + D(12.0f);
-    const float h = D(22.0f);
-    dl->AddRect(p, ImVec2(p.x + w, p.y + h), Rgb(border), 0.0f, D(1.0f));
-    PaintText(dl, g_fontLabel, 12.0f, ImVec2(p.x + D(6.0f), p.y + (h - size.y) * 0.5f), text, key);
-    return w;
-}
-
-void DashedRect(ImDrawList *dl, ImVec2 a, ImVec2 b, uint32_t col) {
-    const float dash = D(5.0f);
-    const float gap = D(4.0f);
-    const float t = D(1.0f);
-    for (float x = a.x; x < b.x; x += dash + gap) {
-        const float x2 = x + dash < b.x ? x + dash : b.x;
-        dl->AddLine(ImVec2(x, a.y), ImVec2(x2, a.y), Rgb(col), t);
-        dl->AddLine(ImVec2(x, b.y), ImVec2(x2, b.y), Rgb(col), t);
-    }
-    for (float y = a.y; y < b.y; y += dash + gap) {
-        const float y2 = y + dash < b.y ? y + dash : b.y;
-        dl->AddLine(ImVec2(a.x, y), ImVec2(a.x, y2), Rgb(col), t);
-        dl->AddLine(ImVec2(b.x, y), ImVec2(b.x, y2), Rgb(col), t);
-    }
-}
-
-enum class ButtonKind { Primary, Normal, Danger };
-
-bool ActionButton(ImDrawList *dl, const char *id, ImVec2 p, const char *label, const char *key, ButtonKind kind,
-                  float &width) {
-    const float h = D(48.0f);
-    const ImVec2 labelSize = Measure(g_fontSemi, 16.0f, label);
-    const float keyWidth = Measure(g_fontLabel, 12.0f, key).x + D(12.0f);
-    width = D(20.0f) + labelSize.x + D(12.0f) + keyWidth + D(20.0f);
-    ImGui::SetCursorScreenPos(p);
-    const bool clicked = ImGui::InvisibleButton(id, ImVec2(width, h));
-    const bool hovered = ImGui::IsItemHovered();
-    const ImVec2 q(p.x + width, p.y + h);
-    uint32_t textColor = kText;
-    uint32_t keyText = kMuted;
-    uint32_t keyBorder = kKeyLine;
-    if (kind == ButtonKind::Primary) {
-        dl->AddRectFilled(p, q, Rgb(kGreen, hovered ? 1.0f : 0.88f));
-        textColor = kOnGreen;
-        keyText = kOnGreen;
-        keyBorder = kOnGreen;
-    } else {
-        if (hovered) {
-            dl->AddRectFilled(p, q, Rgb(kSelected));
-        }
-        const uint32_t border = kind == ButtonKind::Danger ? kDanger : kKeyLine;
-        dl->AddRect(p, q, Rgb(border), 0.0f, D(1.0f));
-        if (kind == ButtonKind::Danger) {
-            textColor = kDanger;
-        }
-    }
-    PaintText(dl, g_fontSemi, 16.0f, ImVec2(p.x + D(20.0f), p.y + (h - labelSize.y) * 0.5f), textColor, label);
-    KeyHint(dl, ImVec2(p.x + D(20.0f) + labelSize.x + D(12.0f), p.y + D(13.0f)), key, keyText, keyBorder);
-    return clicked;
-}
-
-float FontBase(float px) {
-    return D(px) / ImGui::GetStyle().FontScaleMain;
-}
 
 bool TitleInput(ImVec2 p, float width, float px, const char *hint) {
-    ImGui::SetCursorScreenPos(p);
-    ImGui::SetNextItemWidth(width);
-    ImGui::PushFont(g_fontSemi, FontBase(px));
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, Rgb(kSelected));
-    ImGui::PushStyleColor(ImGuiCol_Text, Rgb(kText));
-    ImGui::PushStyleColor(ImGuiCol_Border, Rgb(kGreen));
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, D(1.0f));
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(D(10.0f), D(6.0f)));
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
-    if (g_ui.focusPending) {
-        ImGui::SetKeyboardFocusHere();
-        g_ui.focusPending = false;
-    }
-    const bool enter = ImGui::InputTextWithHint("##title", hint, g_ui.text, sizeof(g_ui.text),
-                                                ImGuiInputTextFlags_EnterReturnsTrue);
-    ImGui::PopStyleVar(3);
-    ImGui::PopStyleColor(3);
-    ImGui::PopFont();
-    return enter;
+    return TextInput(p, width, px, hint, g_ui.text, sizeof(g_ui.text), g_ui.focusPending);
 }
 
 std::vector<int> LoadoutsOfClass(int classId) {
@@ -702,16 +527,6 @@ void HandleKeys(const Equipment &e) {
             g_ui.scrollPending = true;
         }
     }
-}
-
-std::string KeyName(int vk) {
-    char buf[16];
-    if (vk >= VK_F1 && vk <= VK_F24) {
-        snprintf(buf, sizeof(buf), "F%d", vk - VK_F1 + 1);
-    } else {
-        snprintf(buf, sizeof(buf), "0x%02X", vk);
-    }
-    return buf;
 }
 
 void DrawHeader(ImDrawList *dl, ImVec2 o, float w, const Equipment *e, bool &open) {
@@ -1011,25 +826,6 @@ bool CurrentEquipment(Equipment &out) {
     return g_snapshotValid;
 }
 
-void LoadLoadoutsFonts() {
-    struct {
-        const char *path;
-        ImFont **target;
-    } fonts[] = {
-        {"C:\\Windows\\Fonts\\bahnschrift.ttf", &g_fontLabel},
-        {"C:\\Windows\\Fonts\\segoeuib.ttf", &g_fontBold},
-        {"C:\\Windows\\Fonts\\seguisb.ttf", &g_fontSemi},
-    };
-    ImGuiIO &io = ImGui::GetIO();
-    for (auto &f : fonts) {
-        if (GetFileAttributesA(f.path) == INVALID_FILE_ATTRIBUTES) {
-            LogF("loadouts: no esta %s, uso la fuente por defecto", f.path);
-            continue;
-        }
-        *f.target = io.Fonts->AddFontFromFileTTF(f.path, 16.0f);
-    }
-}
-
 void DrawLoadoutsPanel(bool &open, float scale) {
     static int lastFrame = -2;
     if (ImGui::GetFrameCount() != lastFrame + 1) {
@@ -1039,13 +835,14 @@ void DrawLoadoutsPanel(bool &open, float scale) {
     lastFrame = ImGui::GetFrameCount();
 
     const ImVec2 screen = ImGui::GetIO().DisplaySize;
-    g_k = scale * kDesignScale;
-    if (kWindowW * g_k > screen.x * 0.95f) {
-        g_k = screen.x * 0.95f / kWindowW;
+    float k = scale * kDesignScale;
+    if (kWindowW * k > screen.x * 0.95f) {
+        k = screen.x * 0.95f / kWindowW;
     }
-    if (kWindowH * g_k > screen.y * 0.92f) {
-        g_k = screen.y * 0.92f / kWindowH;
+    if (kWindowH * k > screen.y * 0.92f) {
+        k = screen.y * 0.92f / kWindowH;
     }
+    SetScale(k);
     const ImVec2 size(D(kWindowW), D(kWindowH));
 
     ImGui::SetNextWindowSize(size, ImGuiCond_Always);

@@ -9,6 +9,5 @@ struct Equipment {
 };
 
 bool CurrentEquipment(Equipment &out);
-void LoadLoadoutsFonts();
 void DrawLoadoutsPanel(bool &open, float scale);
 void InitLoadouts();
