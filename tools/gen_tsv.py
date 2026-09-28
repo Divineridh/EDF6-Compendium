@@ -1,9 +1,10 @@
 """Genera el weapons.tsv que lee el plugin.
 
 Fuente: el catalogo extraido del cpk por EDF6-UI/tools/weapons.py.
-El estado de obtenidas sale del obtenidas.txt que escribe el plugin en la carpeta
-del juego (ver EDF6-UI/tools/obtenidas.py para el orden de busqueda); mientras no
-exista, se marca por nivel para poder ver los dos colores en pantalla.
+El estado de obtenidas sale de un obtenidas.txt (ver EDF6-UI/tools/obtenidas.py para
+el orden de busqueda); mientras no exista, se marca por nivel para poder ver los dos
+colores en pantalla. El plugin ya no lo escribe: lee el save solo, y esta columna es
+el respaldo para cuando el save no se puede leer.
 """
 
 import json

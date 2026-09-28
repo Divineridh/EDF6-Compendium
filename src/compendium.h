@@ -66,6 +66,7 @@ const std::vector<Strat> &GetStrats();
 
 // Estado real de obtenidas, descifrando MAIN.GST.
 bool LeerObtenidasDelSave();
+unsigned long long MomentoLecturaSave();
 
 // Indices que pasaron de no obtenidas a obtenidas en la ultima relectura del
 // save. Vacio en la primera, que compara contra el TSV y no contra una partida.
@@ -84,8 +85,6 @@ Weapon *ArmaPorIndice(int index);
 void LoadWishlist();
 bool SaveWishlist();
 int EnWishlist();
-bool SaveOwned();
-const char *SavePath();
 
 void Log(const char *msg);
 void LogF(const char *fmt, ...);

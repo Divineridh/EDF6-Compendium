@@ -270,34 +270,6 @@ bool SondeoDirecto() {
     return estado != 0;
 }
 
-static std::string g_savePath;
-
-const char *SavePath() {
-    return g_savePath.c_str();
-}
-
-// Escribe los nombres marcados. Es el mismo archivo que lee el generador del
-// capitulo del manual, asi que marcar aca actualiza las dos salidas.
-bool SaveOwned() {
-    g_savePath = GamePath("Mods\\Compendium\\obtenidas.txt");
-    std::ofstream out(g_savePath);
-    if (!out) {
-        LogF("no pude escribir %s", g_savePath.c_str());
-        return false;
-    }
-    int n = 0;
-    for (const ClassData &c : g_catalog.classes) {
-        for (const Weapon &w : c.weapons) {
-            if (w.owned) {
-                out << w.name << "\n";
-                n++;
-            }
-        }
-    }
-    LogF("guardadas %d armas en %s", n, g_savePath.c_str());
-    return true;
-}
-
 static std::vector<Drop> g_drops;
 
 const std::vector<Drop> &GetDrops() {

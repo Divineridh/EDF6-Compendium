@@ -27,10 +27,7 @@ USO
 F1 abre y cierra el overlay, en el lobby o en mision.
 
 Las armas obtenidas se leen solas del save y se actualizan al volver de cada
-mision. Tambien se pueden marcar a mano con las casillas.
-
-El boton "export" vuelca la lista de obtenidas a obtenidas.txt, que es lo que
-leen los generadores del catalogo.
+mision. "Reload" arriba a la derecha fuerza una relectura.
 
 WISHLIST
 --------

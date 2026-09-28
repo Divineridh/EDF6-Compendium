@@ -27,6 +27,7 @@ constexpr uint32_t kMaxed = 0xFAC775;
 extern ImFont *g_fontLabel;
 extern ImFont *g_fontBold;
 extern ImFont *g_fontSemi;
+extern ImFont *g_fontMono;
 
 void LoadFonts();
 void SetScale(float k);

@@ -11,6 +11,7 @@ namespace ui {
 ImFont *g_fontLabel = nullptr;
 ImFont *g_fontBold = nullptr;
 ImFont *g_fontSemi = nullptr;
+ImFont *g_fontMono = nullptr;
 
 namespace {
 
@@ -30,6 +31,7 @@ void LoadFonts() {
         {"C:\\Windows\\Fonts\\bahnschrift.ttf", &g_fontLabel},
         {"C:\\Windows\\Fonts\\segoeuib.ttf", &g_fontBold},
         {"C:\\Windows\\Fonts\\seguisb.ttf", &g_fontSemi},
+        {"C:\\Windows\\Fonts\\consola.ttf", &g_fontMono},
     };
     ImGuiIO &io = ImGui::GetIO();
     for (auto &f : fonts) {

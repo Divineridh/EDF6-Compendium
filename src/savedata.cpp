@@ -143,6 +143,11 @@ static FILETIME g_escrituraSave = {0, 0};
 static int g_marcadasSave = 0;
 static std::vector<int> g_recien;
 static bool g_primeraLectura = true;
+static unsigned long long g_leidoEn = 0;
+
+unsigned long long MomentoLecturaSave() {
+    return g_leidoEn;
+}
 
 const std::vector<int> &RecienObtenidas() {
     return g_recien;
@@ -265,6 +270,7 @@ bool LeerObtenidasDelSave() {
         LogF("nuevas desde la ultima lectura: %d", (int)g_recien.size());
     }
     g_primeraLectura = false;
+    g_leidoEn = GetTickCount64();
     LogF("save leido: %d armas obtenidas de %s", marcadas, ruta.c_str());
     return true;
 }

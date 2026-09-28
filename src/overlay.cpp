@@ -17,6 +17,7 @@
 #include "backends/imgui_impl_win32.h"
 
 #include "compendium.h"
+#include "compendium_ui.h"
 #include "loadouts.h"
 #include "ui_kit.h"
 
@@ -44,15 +45,9 @@ static bool AlgunPanelVisible() {
     return g_visible || g_loadoutsVisible;
 }
 
-static char g_filter[64] = "";
 
 // ---------------------------------------------------------------- interfaz
 
-static int g_verQue = 0;  // 0 todas, 1 solo faltantes, 2 solo obtenidas
-static bool g_sucio = false;
-static int g_seleccionada = -1;
-static int g_nivelSel = 0;
-static std::string g_nombreSel;
 
 static bool g_planListo = false;
 static bool g_planSoloWish = false;
@@ -88,101 +83,6 @@ static float AltoDrops() {
     const float deseado = Esc(ALTO_DROPS);
     const float tope = ImGui::GetWindowHeight() * 0.40f;
     return deseado < tope ? deseado : tope;
-}
-
-// Un arma dropea si su nivel cae en [lo, hi] de la mision, en las cuatro
-// dificultades. Ver tools/gen_missions.py: la hoja de origen se equivoca en
-// Inferno y el tamano del pool lo demuestra.
-static void DrawDrops() {
-    if (g_seleccionada < 0) {
-        ImGui::TextDisabled("Pick a weapon from the list to see where it drops.");
-        return;
-    }
-
-    Weapon *sel = ArmaPorIndice(g_seleccionada);
-    const int tierSel = sel ? sel->tier : 0;
-
-    std::vector<const Drop *> aptas;
-    for (const Drop &d : GetDrops()) {
-        if (tierSel <= d.tier && d.lo <= g_nivelSel && g_nivelSel <= d.hi) {
-            aptas.push_back(&d);
-        }
-    }
-    std::sort(aptas.begin(), aptas.end(),
-              [](const Drop *a, const Drop *b) { return a->chance > b->chance; });
-
-    ImGui::Text("Where to farm:");
-    ImGui::SameLine();
-    ImGui::TextColored(ImVec4(1.0f, 0.85f, 0.4f, 1.0f), "%s", g_nombreSel.c_str());
-    ImGui::SameLine();
-    ImGui::TextDisabled("Lv %d", g_nivelSel);
-
-    if (sel) {
-        ImGui::SameLine();
-        ImGui::PushStyleColor(ImGuiCol_Text, sel->wish ? COLOR_WISH : COLOR_WISH_OFF);
-        if (ImGui::SmallButton(sel->wish ? "\xE2\x99\xA5 on wishlist###wishdet"
-                                         : "\xE2\x99\xA1 add to wishlist###wishdet")) {
-            AlternarWish(*sel);
-        }
-        ImGui::PopStyleColor();
-    }
-
-    if (aptas.empty()) {
-        ImGui::TextColored(ImVec4(1, 0.6f, 0.4f, 1),
-                           "No mission drops this one: mission or DLC reward.");
-        return;
-    }
-
-    // Resumen: cuantas misiones y la mejor chance de cada dificultad, para decidir
-    // sin leer la tabla entera.
-    static const char *ORDEN[] = {"Normal", "Hard", "Hardest", "Inferno"};
-    ImGui::SameLine();
-    ImGui::TextDisabled("|  %d missions", (int)aptas.size());
-    for (const char *dif : ORDEN) {
-        int cuenta = 0;
-        float mejor = 0.0f;
-        for (const Drop *d : aptas) {
-            if (d->difficulty == dif) {
-                cuenta++;
-                if (d->chance > mejor) mejor = d->chance;
-            }
-        }
-        if (!cuenta) {
-            continue;
-        }
-        ImGui::SameLine();
-        ImGui::TextColored(ImVec4(0.55f, 0.75f, 1.0f, 1.0f), "  %s: %d (max %.2f%%)", dif,
-                           cuenta, mejor * 100.0f);
-    }
-
-    const ImGuiTableFlags flags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg |
-                                  ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable;
-    if (!ImGui::BeginTable("drops", 4, flags, ImVec2(0.0f, 0.0f))) {
-        return;
-    }
-    ImGui::TableSetupScrollFreeze(0, 1);
-    ImGui::TableSetupColumn("Difficulty", ImGuiTableColumnFlags_WidthFixed, Esc(130.0f));
-    ImGui::TableSetupColumn("Mission", ImGuiTableColumnFlags_WidthFixed, Esc(110.0f));
-    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
-    ImGui::TableSetupColumn("Chance", ImGuiTableColumnFlags_WidthFixed, Esc(90.0f));
-    ImGui::TableHeadersRow();
-
-    for (size_t i = 0; i < aptas.size(); i++) {
-        const Drop *d = aptas[i];
-        ImGui::TableNextRow();
-        ImGui::TableSetColumnIndex(0);
-        ImGui::TextColored(ImVec4(0.55f, 0.75f, 1.0f, 1.0f), "%s", d->difficulty.c_str());
-        ImGui::TableSetColumnIndex(1);
-        ImGui::Text("%s", d->mission.c_str());
-        ImGui::TableSetColumnIndex(2);
-        ImGui::Text("%s", d->missionName.c_str());
-        ImGui::TableSetColumnIndex(3);
-        // La mejor opcion en verde: es la que vas a farmear.
-        const bool top = (i == 0) || (d->chance >= aptas[0]->chance * 0.98f);
-        ImGui::TextColored(top ? ImVec4(0.6f, 1.0f, 0.6f, 1.0f) : ImVec4(0.8f, 0.8f, 0.8f, 1.0f),
-                           "%.2f%%", d->chance * 100.0f);
-    }
-    ImGui::EndTable();
 }
 
 // ------------------------------------------------------------- planificador
@@ -447,280 +347,6 @@ static void DrawStrats() {
     }
     ImGui::EndChild();
 }
-
-static bool ContieneSinCase(const std::string &texto, const char *aguja) {
-    std::string t, a;
-    t.reserve(texto.size());
-    for (char c : texto) {
-        t += (char)tolower((unsigned char)c);
-    }
-    for (const char *p = aguja; *p; p++) {
-        a += (char)tolower((unsigned char)*p);
-    }
-    return t.find(a) != std::string::npos;
-}
-
-static bool PasaFiltro(const Weapon &w) {
-    if (g_verQue == 1 && w.owned) return false;
-    if (g_verQue == 2 && !w.owned) return false;
-    if (g_verQue == 3 && (!w.owned || w.starred)) return false;  // falta maximizar
-    if (g_verQue == 4 && !w.wish) return false;
-    if (g_verQue == 5 && (w.owned || !w.farmable)) return false;
-    if (g_filter[0] && !ContieneSinCase(w.name, g_filter) &&
-        !ContieneSinCase(w.categoryName, g_filter)) {
-        return false;
-    }
-    return true;
-}
-
-// Progreso de mejora sumando todos los stats: 23/40 quiere decir que juntaste 23
-// de las 40 mejoras posibles del arma.
-static int FaltaMejorar(const Weapon &w);
-
-static void ProgresoMejora(const Weapon &w, int *actual, int *tope) {
-    *actual = 0;
-    *tope = 0;
-    for (size_t i = 0; i < w.upgradeMax.size(); i++) {
-        *tope += w.upgradeMax[i];
-        const int v = i < w.upgradeNow.size() ? w.upgradeNow[i] : 0;
-        *actual += v < w.upgradeMax[i] ? v : w.upgradeMax[i];
-    }
-}
-
-// Cuantas mejoras le faltan al arma para la estrella. Las que no tenes van al
-// fondo del orden: no se pueden mejorar todavia.
-static int FaltaMejorar(const Weapon &w) {
-    if (!w.owned || w.upgradeMax.empty()) {
-        return 1 << 20;
-    }
-    int act = 0, tope = 0;
-    ProgresoMejora(w, &act, &tope);
-    return tope - act;
-}
-
-// -1 = todas. Se guarda el id de categoria, no un indice: si cambias de clase y
-// esa categoria no existe ahi, cae solo a "todas" sin estado extra que sincronizar.
-static int g_catSel = -1;
-
-static void ContadorDerecha(float anchoPanel, int tengo, int total, bool completo) {
-    char texto[32];
-    snprintf(texto, sizeof(texto), "%d / %d", tengo, total);
-    const float x = anchoPanel - ImGui::CalcTextSize(texto).x;
-    ImGui::SameLine(x > 0.0f ? x : 0.0f);
-    if (completo) {
-        ImGui::TextColored(ImVec4(0.6f, 0.9f, 0.6f, 1.0f), "%s", texto);
-    } else {
-        ImGui::TextDisabled("%s", texto);
-    }
-}
-
-static void DrawClass(ClassData &clase) {
-    int tengo = 0;
-    for (const Weapon &w : clase.weapons) {
-        if (w.owned) tengo++;
-    }
-    const int total = (int)clase.weapons.size();
-    ImGui::Text("%d / %d collected  (%.0f%%)", tengo, total,
-                total ? 100.0f * tengo / total : 0.0f);
-    int faltanFarmeables = 0;
-    for (const Weapon &w : clase.weapons) {
-        if (!w.owned && w.farmable) faltanFarmeables++;
-    }
-    ImGui::SameLine();
-    ImGui::TextDisabled("|  %d missing", total - tengo);
-    ImGui::SameLine();
-    ImGui::TextDisabled("(%d farmable)", faltanFarmeables);
-    if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("The rest are mission or DLC rewards: no crate ever drops them.");
-    }
-    int conEstrella = 0;
-    for (const Weapon &w : clase.weapons) {
-        if (w.starred) conEstrella++;
-    }
-    ImGui::SameLine();
-    ImGui::TextColored(ImVec4(1.0f, 0.85f, 0.3f, 1.0f), "|  %d fully upgraded", conEstrella);
-    int enWish = 0;
-    for (const Weapon &w : clase.weapons) {
-        if (w.wish) enWish++;
-    }
-    if (enWish) {
-        ImGui::SameLine();
-        ImGui::TextColored(COLOR_WISH, "|  %d wanted", enWish);
-    }
-
-    // Categorias en el orden en que aparecen, con su progreso.
-    struct Cat {
-        int id;
-        std::string nombre;
-        int tengo;
-        int total;
-    };
-    std::vector<Cat> cats;
-    for (const Weapon &w : clase.weapons) {
-        if (cats.empty() || cats.back().id != w.category) {
-            bool visto = false;
-            for (const Cat &c : cats) {
-                if (c.id == w.category) visto = true;
-            }
-            if (!visto) {
-                cats.push_back(Cat{w.category, w.categoryName, 0, 0});
-            }
-        }
-        for (Cat &c : cats) {
-            if (c.id == w.category) {
-                c.total++;
-                if (w.owned) c.tengo++;
-            }
-        }
-    }
-
-    bool existe = (g_catSel == -1);
-    for (const Cat &c : cats) {
-        if (c.id == g_catSel) existe = true;
-    }
-    const int catActiva = existe ? g_catSel : -1;
-
-    ImGui::BeginChild("categorias", ImVec2(Esc(330.0f), -AltoDrops()), true);
-    const float anchoCats = ImGui::GetContentRegionAvail().x;
-    if (ImGui::Selectable("All", catActiva == -1)) {
-        g_catSel = -1;
-    }
-    ContadorDerecha(anchoCats, tengo, total, false);
-    ImGui::Separator();
-    for (const Cat &c : cats) {
-        ImGui::PushID(c.id);
-        if (ImGui::Selectable(c.nombre.c_str(), catActiva == c.id)) {
-            g_catSel = c.id;
-        }
-        ContadorDerecha(anchoCats, c.tengo, c.total, c.tengo == c.total);
-        ImGui::PopID();
-    }
-    ImGui::EndChild();
-
-    ImGui::SameLine();
-
-    ImGui::BeginChild("lista", ImVec2(0.0f, -AltoDrops()), false);
-    const ImGuiTableFlags flags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg |
-                                  ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable;
-    const int columnas = (catActiva == -1) ? 6 : 5;
-    if (ImGui::BeginTable("armas", columnas, flags | ImGuiTableFlags_Sortable,
-                          ImVec2(0.0f, 0.0f))) {
-        ImGui::TableSetupScrollFreeze(0, 1);
-        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort,
-                                Esc(34.0f));
-        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort,
-                                Esc(30.0f));
-        ImGui::TableSetupColumn("Weapon", ImGuiTableColumnFlags_WidthStretch);
-        ImGui::TableSetupColumn("Lv", ImGuiTableColumnFlags_WidthFixed |
-                                          ImGuiTableColumnFlags_DefaultSort, Esc(46.0f));
-        ImGui::TableSetupColumn("Upg", ImGuiTableColumnFlags_WidthFixed, Esc(76.0f));
-        if (columnas == 6) {
-            ImGui::TableSetupColumn("Category", ImGuiTableColumnFlags_WidthFixed, Esc(190.0f));
-        }
-        ImGui::TableHeadersRow();
-
-        const ImVec4 verde(0.75f, 1.00f, 0.75f, 1.0f);
-        const ImVec4 gris(0.45f, 0.45f, 0.45f, 1.0f);
-
-        std::vector<Weapon *> filas;
-        for (Weapon &w : clase.weapons) {
-            if (catActiva != -1 && w.category != catActiva) {
-                continue;
-            }
-            if (!PasaFiltro(w)) {
-                continue;
-            }
-            filas.push_back(&w);
-        }
-        ImGuiTableSortSpecs *specs = ImGui::TableGetSortSpecs();
-        if (specs && specs->SpecsCount > 0) {
-            const ImGuiTableColumnSortSpecs sp = specs->Specs[0];
-            const bool asc = sp.SortDirection == ImGuiSortDirection_Ascending;
-            std::sort(filas.begin(), filas.end(), [&](const Weapon *a, const Weapon *b) {
-                int c = 0;
-                if (sp.ColumnIndex == 2) {
-                    c = a->name.compare(b->name);
-                } else if (sp.ColumnIndex == 3) {
-                    c = a->level - b->level;
-                } else if (sp.ColumnIndex == 4) {
-                    c = FaltaMejorar(*a) - FaltaMejorar(*b);
-                } else if (sp.ColumnIndex == 5) {
-                    c = a->categoryName.compare(b->categoryName);
-                }
-                if (c == 0) {
-                    c = a->index - b->index;
-                }
-                return asc ? c < 0 : c > 0;
-            });
-        }
-
-        for (Weapon *pw : filas) {
-            Weapon &w = *pw;
-            ImGui::TableNextRow();
-            ImGui::TableSetColumnIndex(0);
-            ImGui::PushID(w.index);
-            if (ImGui::Checkbox("##tengo", &w.owned)) {
-                g_sucio = true;
-                g_planListo = false;
-                g_misionesListas = false;
-                g_rutaLista = false;
-            }
-            ImGui::PopID();
-
-            ImGui::TableSetColumnIndex(1);
-            ImGui::PushID(w.index);
-            ImGui::PushStyleColor(ImGuiCol_Text, w.wish ? COLOR_WISH : COLOR_WISH_OFF);
-            if (ImGui::Selectable(w.wish ? "\xE2\x99\xA5###wish" : "\xE2\x99\xA1###wish", false, 0,
-                                  ImVec2(Esc(22.0f), 0.0f))) {
-                AlternarWish(w);
-            }
-            ImGui::PopStyleColor();
-            ImGui::PopID();
-
-            ImGui::TableSetColumnIndex(2);
-            if (w.starred) {
-                // U+2605 en UTF-8: la misma marca que usa el juego.
-                ImGui::TextColored(ImVec4(1.0f, 0.85f, 0.3f, 1.0f), "\xE2\x98\x85");
-                ImGui::SameLine(0.0f, Esc(4.0f));
-            }
-            ImGui::PushStyleColor(ImGuiCol_Text, w.owned ? verde : gris);
-            ImGui::PushID(w.index);
-            if (ImGui::Selectable(w.name.c_str(), g_seleccionada == w.index,
-                                  ImGuiSelectableFlags_SpanAllColumns)) {
-                g_seleccionada = w.index;
-                g_nivelSel = w.level;
-                g_nombreSel = w.name;
-            }
-            ImGui::PopID();
-            ImGui::PopStyleColor();
-            if (ImGui::IsItemHovered() && !w.stats.empty()) {
-                int act = 0, tope = 0;
-                ProgresoMejora(w, &act, &tope);
-                ImGui::SetTooltip("%s\n\nUpgrades: %d / %d%s", w.stats.c_str(), act, tope,
-                                  w.starred ? "   (fully upgraded)" : "");
-            }
-            ImGui::TableSetColumnIndex(3);
-            ImGui::TextColored(w.owned ? verde : gris, "%d", w.level);
-            ImGui::TableSetColumnIndex(4);
-            if (w.owned && !w.upgradeMax.empty()) {
-                int act = 0, tope = 0;
-                ProgresoMejora(w, &act, &tope);
-                ImGui::TextColored(w.starred ? ImVec4(1.0f, 0.85f, 0.3f, 1.0f) : gris, "%d/%d",
-                                   act, tope);
-            } else {
-                ImGui::TextColored(gris, "-");
-            }
-            if (columnas == 6) {
-                ImGui::TableSetColumnIndex(5);
-                ImGui::TextColored(gris, "%s", w.categoryName.c_str());
-            }
-        }
-        ImGui::EndTable();
-    }
-    ImGui::EndChild();
-}
-
-
 
 // ------------------------------------------------------------- misiones
 //
@@ -1003,147 +629,6 @@ static void DrawRuta() {
     }
 }
 
-static void DrawUI() {
-    const ImVec2 pantalla = ImGui::GetIO().DisplaySize;
-    const float anchoVentana = Esc(1420.0f);
-    const float altoVentana = Esc(950.0f);
-    ImGui::SetNextWindowSize(
-        ImVec2(anchoVentana < pantalla.x * 0.95f ? anchoVentana : pantalla.x * 0.95f,
-               altoVentana < pantalla.y * 0.95f ? altoVentana : pantalla.y * 0.95f),
-        ImGuiCond_FirstUseEver);
-    bool abierto = g_visible;
-    const bool dibuja = ImGui::Begin("Weapon Compendium", &abierto);
-    g_visible = abierto;
-    if (!dibuja) {
-        ImGui::End();
-        return;
-    }
-
-    const Catalog &cat = GetCatalog();
-    if (cat.classes.empty()) {
-        ImGui::TextColored(ImVec4(1, 0.5f, 0.5f, 1), "weapons.tsv not loaded");
-        ImGui::TextDisabled("Expected at Mods\\Compendium\\weapons.tsv");
-        ImGui::End();
-        return;
-    }
-
-    ImGui::SetNextItemWidth(Esc(240.0f));
-    ImGui::InputTextWithHint("##filtro", "search...", g_filter, sizeof(g_filter));
-    ImGui::SameLine();
-    if (ImGui::Button("clear")) {
-        g_filter[0] = '\0';
-    }
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth(Esc(200.0f));
-    ImGui::Combo("##ver", &g_verQue, "all\0missing only\0collected only\0not maxed\0wishlist\0missing & farmable\0");
-    ImGui::SameLine();
-
-    // El estado del save se muestra siempre, tengas o no ediciones pendientes: si
-    // esto queda tapado no hay forma de notar que las marcas son del TSV y no del
-    // save, ni que el refresco automatico esta frenado.
-    const bool desdeSave = MarcadasEnSave() > 0;
-    if (desdeSave) {
-        ImGui::TextColored(ImVec4(0.6f, 0.9f, 0.6f, 1.0f), "read from save");
-        if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", SavePathUsado());
-        }
-        ImGui::SameLine();
-        if (ImGui::SmallButton("reload")) {
-            LeerObtenidasDelSave();
-            g_sucio = false;
-        }
-        ImGui::SameLine();
-        if (ImGui::SmallButton("export")) {
-            SaveOwned();
-        }
-        if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("Writes Mods\\Compendium\\obtenidas.txt, which the manual "
-                              "generator reads");
-        }
-    } else {
-        ImGui::TextColored(ImVec4(1.0f, 0.72f, 0.35f, 1.0f), "save not read");
-        if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("These marks come from weapons.tsv, not from your save.\n"
-                              "Check Compendium.log to see how far the plugin got.");
-        }
-    }
-
-    if (g_sucio) {
-        ImGui::SameLine();
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.35f, 0.55f, 0.30f, 1.0f));
-        if (ImGui::Button("Save changes")) {
-            if (SaveOwned()) {
-                g_sucio = false;
-            }
-        }
-        ImGui::PopStyleColor();
-        if (desdeSave) {
-            ImGui::SameLine();
-            ImGui::TextColored(ImVec4(1.0f, 0.72f, 0.35f, 1.0f), "auto-refresh paused");
-            if (ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("You edited checkboxes, so the save is not being re-read and "
-                                  "new weapons will not show up.\nSave to keep your edits, or "
-                                  "reload to drop them and follow the save again.");
-            }
-        }
-    }
-
-    if (!g_nuevas.empty()) {
-        ImGui::TextColored(ImVec4(0.6f, 1.0f, 0.6f, 1.0f), "%d new since your last mission:",
-                           (int)g_nuevas.size());
-        ImGui::SameLine();
-        if (ImGui::SmallButton("dismiss")) {
-            g_nuevas.clear();
-            g_nuevasWish.clear();
-        }
-        std::string lista;
-        for (size_t i = 0; i < g_nuevas.size() && i < 12; i++) {
-            if (i) lista += ", ";
-            lista += g_nuevas[i];
-        }
-        if (g_nuevas.size() > 12) {
-            lista += ", ...";
-        }
-        ImGui::TextWrapped("%s", lista.c_str());
-        ImGui::Separator();
-    }
-
-    int totalTengo = 0, totalTodo = 0;
-    for (const ClassData &c : cat.classes) {
-        for (const Weapon &w : c.weapons) {
-            totalTodo++;
-            if (w.owned) totalTengo++;
-        }
-    }
-    ImGui::ProgressBar(totalTodo ? (float)totalTengo / totalTodo : 0.0f, ImVec2(-1, 0));
-
-    if (ImGui::BeginTabBar("clases")) {
-        for (ClassData &c : MutableCatalog().classes) {
-            if (ImGui::BeginTabItem(c.name.c_str())) {
-                DrawClass(c);
-                ImGui::EndTabItem();
-            }
-        }
-        if (ImGui::BeginTabItem("Farming")) {
-            DrawPlan();
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("Missions")) {
-            DrawMisiones();
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("Strats")) {
-            DrawStrats();
-            ImGui::EndTabItem();
-        }
-        ImGui::EndTabBar();
-    }
-
-    ImGui::Separator();
-    DrawDrops();
-    ImGui::End();
-}
-
 // El save se revisa cada dos segundos y no por frame: alcanza de sobra para
 // avisar al volver de una mision, y hay que hacerlo con el overlay cerrado para
 // que el aviso llegue sin tener que abrirlo.
@@ -1154,7 +639,7 @@ static void RevisarSave() {
         return;
     }
     proxima = ahora + 2000;
-    if (g_sucio || !SaveCambio() || !LeerObtenidasDelSave()) {
+    if (!SaveCambio() || !LeerObtenidasDelSave()) {
         return;
     }
     g_nuevas.clear();
@@ -1661,7 +1146,11 @@ static void FrameOverlay(IDXGISwapChain *swap) {
         g_enImGui = false;
         ImGui::NewFrame();
         if (g_visible) {
-            DrawUI();
+            bool abierto = true;
+            DrawCompendiumPanel(abierto, g_escala);
+            if (!abierto) {
+                g_visible = false;
+            }
         }
         if (g_loadoutsVisible) {
             bool abierto = true;
