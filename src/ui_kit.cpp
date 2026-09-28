@@ -147,6 +147,20 @@ void DashedRect(ImDrawList *dl, ImVec2 a, ImVec2 b, uint32_t col) {
     }
 }
 
+void Heart(ImDrawList *dl, ImVec2 center, float size, uint32_t col) {
+    const float r = size * 0.27f;
+    const ImU32 c = Rgb(col);
+    dl->AddCircleFilled(ImVec2(center.x - r * 0.95f, center.y - r * 0.35f), r, c, 16);
+    dl->AddCircleFilled(ImVec2(center.x + r * 0.95f, center.y - r * 0.35f), r, c, 16);
+    dl->AddTriangleFilled(ImVec2(center.x - r * 1.9f, center.y - r * 0.15f),
+                          ImVec2(center.x + r * 1.9f, center.y - r * 0.15f), ImVec2(center.x, center.y + r * 1.9f), c);
+}
+
+float WrappedText(ImDrawList *dl, ImFont *f, float px, ImVec2 p, uint32_t col, const char *t, float wrapWidth) {
+    dl->AddText(FontOr(f), D(px), p, Rgb(col), t, nullptr, wrapWidth);
+    return FontOr(f)->CalcTextSizeA(D(px), FLT_MAX, wrapWidth, t).y;
+}
+
 std::string KeyName(int vk) {
     char buf[16];
     if (vk >= VK_F1 && vk <= VK_F24) {

@@ -49,584 +49,19 @@ static bool AlgunPanelVisible() {
 // ---------------------------------------------------------------- interfaz
 
 
-static bool g_planListo = false;
-static bool g_planSoloWish = false;
-static bool g_misionesListas = false;
-static bool g_rutaLista = false;
-
-static void DrawRuta();
-
-static const ImVec4 COLOR_WISH(1.00f, 0.45f, 0.60f, 1.00f);
-static const ImVec4 COLOR_WISH_OFF(0.38f, 0.38f, 0.38f, 1.00f);
-
 static std::vector<std::string> g_nuevas;
 static std::vector<std::string> g_nuevasWish;
 static unsigned long long g_toastHasta = 0;
 
-static void AlternarWish(Weapon &w) {
-    w.wish = !w.wish;
-    SaveWishlist();
-    g_planListo = false;
-    g_rutaLista = false;
-}
-
 static float g_escala = 1.0f;
 
-static float Esc(float v) {
-    return v * g_escala;
+const std::vector<std::string> &NuevasDesdeUltimaMision() {
+    return g_nuevas;
 }
 
-// Alto reservado abajo para el panel de dropeo; las listas de arriba lo restan.
-static const float ALTO_DROPS = 330.0f;
-
-static float AltoDrops() {
-    const float deseado = Esc(ALTO_DROPS);
-    const float tope = ImGui::GetWindowHeight() * 0.40f;
-    return deseado < tope ? deseado : tope;
-}
-
-// ------------------------------------------------------------- planificador
-//
-// Da vuelta la pregunta: en vez de "donde sale esta arma", "a que mision me
-// conviene ir". Como cada caja elige uniforme del pool de la mision, la chance
-// de que te toque algo NUEVO es (faltantes en el pool) / (tamano del pool), y
-// el tamano del pool es 1/probabilidad.
-
-struct Plan {
-    const Drop *drop;
-    int faltantes;
-    int pool;
-    float porCaja;
-    float cajasUna;
-    float cajasTodas;
-};
-
-// Cajas esperadas para juntar las que faltan. Cada caja sortea uniforme del
-// pool, asi que mientras te falten j el promedio es pool/j cajas por acierto:
-// el total es pool * (1/j + 1/(j-1) + ... + 1). El clasico coleccionista de
-// cupones; con pool/faltantes se subestima muchisimo.
-static float CajasParaTodas(int pool, int faltantes) {
-    double total = 0.0;
-    for (int j = 1; j <= faltantes; j++) {
-        total += 1.0 / j;
-    }
-    return (float)(pool * total);
-}
-
-static std::vector<Plan> g_plan;
-static int g_planClase = -1;  // -1 = todas las clases
-
-static void CalcularPlan() {
-    g_plan.clear();
-    const Catalog &cat = GetCatalog();
-
-    for (const Drop &d : GetDrops()) {
-        // El pool se cuenta del mismo catalogo que los faltantes. Usar el
-        // 1/probabilidad de la hoja mezclaba dos fuentes que no coinciden exacto
-        // en las misiones de DLC, y daba chances arriba del 100%.
-        //
-        // Las cajas sueltan armas de cualquier clase, asi que el pool es siempre
-        // el total del rango; el filtro de clase solo acota que contas como
-        // faltante. La pregunta que responde es "cuantas de estas cajas me dan
-        // algo nuevo PARA esta clase".
-        int pool = 0;
-        int faltantes = 0;
-        int claseIdx = 0;
-        for (const ClassData &c : cat.classes) {
-            const bool cuenta = (g_planClase == -1 || g_planClase == claseIdx);
-            for (const Weapon &w : c.weapons) {
-                if (w.tier <= d.tier && d.lo <= w.level && w.level <= d.hi) {
-                    pool++;
-                    if (!w.owned && cuenta && (!g_planSoloWish || w.wish)) {
-                        faltantes++;
-                    }
-                }
-            }
-            claseIdx++;
-        }
-        if (!faltantes || !pool) {
-            continue;
-        }
-        Plan p;
-        p.drop = &d;
-        p.faltantes = faltantes;
-        p.pool = pool;
-        p.porCaja = (float)faltantes / (float)pool;
-        p.cajasUna = 1.0f / p.porCaja;
-        p.cajasTodas = CajasParaTodas(pool, faltantes);
-        g_plan.push_back(p);
-    }
-    std::sort(g_plan.begin(), g_plan.end(),
-              [](const Plan &a, const Plan &b) { return a.porCaja > b.porCaja; });
-    g_planListo = true;
-}
-
-static void DrawPlan() {
-    const Catalog &cat = GetCatalog();
-    ImGui::TextWrapped(
-        "Which mission to farm right now, based on what you are missing. The chance is "
-        "the probability that a crate gives you a weapon you do not have yet.");
-
-    ImGui::SetNextItemWidth(Esc(260.0f));
-    int previo = g_planClase;
-    if (ImGui::BeginCombo("class", g_planClase == -1 ? "all"
-                                   : cat.classes[g_planClase].name.c_str())) {
-        if (ImGui::Selectable("all", g_planClase == -1)) {
-            g_planClase = -1;
-        }
-        for (int i = 0; i < (int)cat.classes.size(); i++) {
-            if (ImGui::Selectable(cat.classes[i].name.c_str(), g_planClase == i)) {
-                g_planClase = i;
-            }
-        }
-        ImGui::EndCombo();
-    }
-    ImGui::SameLine();
-    if (ImGui::Checkbox("wishlist only", &g_planSoloWish)) {
-        g_planListo = false;
-    }
-    if (g_planSoloWish &&
-        ImGui::CollapsingHeader("Route: fewest missions that cover your wishlist")) {
-        DrawRuta();
-        ImGui::Separator();
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("recalculate") || !g_planListo || previo != g_planClase) {
-        CalcularPlan();
-    }
-    if (g_plan.empty()) {
-        const char *motivo = "Nothing left to find in any crate.";
-        if (g_planSoloWish) {
-            motivo = EnWishlist() == 0
-                         ? "Your wishlist is empty: mark weapons with the heart in the class tabs."
-                         : "Nothing on your wishlist drops from a crate.";
-        }
-        ImGui::TextColored(ImVec4(1, 0.6f, 0.4f, 1), "%s", motivo);
-        return;
-    }
-
-    const ImGuiTableFlags flags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg |
-                                  ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable;
-    if (!ImGui::BeginTable("plan", 8, flags, ImVec2(0.0f, 0.0f))) {
-        return;
-    }
-    ImGui::TableSetupScrollFreeze(0, 1);
-    ImGui::TableSetupColumn("Difficulty", ImGuiTableColumnFlags_WidthFixed, Esc(120.0f));
-    ImGui::TableSetupColumn("Mission", ImGuiTableColumnFlags_WidthFixed, Esc(110.0f));
-    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
-    ImGui::TableSetupColumn(g_planSoloWish ? "Wanted" : "Missing",
-                            ImGuiTableColumnFlags_WidthFixed, Esc(100.0f));
-    ImGui::TableSetupColumn("Pool", ImGuiTableColumnFlags_WidthFixed, Esc(70.0f));
-    ImGui::TableSetupColumn("New per crate", ImGuiTableColumnFlags_WidthFixed, Esc(120.0f));
-    ImGui::TableSetupColumn("Crates for 1", ImGuiTableColumnFlags_WidthFixed, Esc(110.0f));
-    ImGui::TableSetupColumn("Crates for all", ImGuiTableColumnFlags_WidthFixed, Esc(120.0f));
-    ImGui::TableHeadersRow();
-
-    for (size_t i = 0; i < g_plan.size() && i < 200; i++) {
-        const Plan &p = g_plan[i];
-        ImGui::TableNextRow();
-        ImGui::TableSetColumnIndex(0);
-        ImGui::TextColored(ImVec4(0.55f, 0.75f, 1.0f, 1.0f), "%s", p.drop->difficulty.c_str());
-        ImGui::TableSetColumnIndex(1);
-        ImGui::Text("%s", p.drop->mission.c_str());
-        ImGui::TableSetColumnIndex(2);
-        ImGui::Text("%s", p.drop->missionName.c_str());
-        ImGui::TableSetColumnIndex(3);
-        ImGui::Text("%d", p.faltantes);
-        ImGui::TableSetColumnIndex(4);
-        ImGui::TextDisabled("%d", p.pool);
-        ImGui::TableSetColumnIndex(5);
-        ImGui::TextColored(i < 3 ? ImVec4(0.6f, 1.0f, 0.6f, 1.0f) : ImVec4(0.85f, 0.85f, 0.85f, 1.0f),
-                           "%.1f%%", p.porCaja * 100.0f);
-        ImGui::TableSetColumnIndex(6);
-        ImGui::Text("%.1f", p.cajasUna);
-        ImGui::TableSetColumnIndex(7);
-        ImGui::TextDisabled("%.0f", p.cajasTodas);
-    }
-    ImGui::EndTable();
-}
-
-// ------------------------------------------------------------- estrategias
-//
-// Contenido de la comunidad, no derivado del juego. Por eso cada entrada muestra
-// su fuente: los numeros de mision estan verificados contra la tabla, pero los
-// rendimientos que afirma cada guia no.
-
-static int g_stratSel = 0;
-
-// Lo que aporta el mod sobre la estrategia: cuantas de TUS faltantes hay en el
-// pool de esa mision. Una mision comoda con el pool completo no te sirve.
-static void ResumenMision(const std::string &mision) {
-    if (mision == "any" || mision.empty()) {
-        return;
-    }
-    const Catalog &cat = GetCatalog();
-    bool alguna = false;
-    for (const Drop &d : GetDrops()) {
-        if (d.mission != mision) {
-            continue;
-        }
-        int pool = 0, faltan = 0;
-        for (const ClassData &c : cat.classes) {
-            for (const Weapon &w : c.weapons) {
-                if (w.tier <= d.tier && d.lo <= w.level && w.level <= d.hi) {
-                    pool++;
-                    if (!w.owned) faltan++;
-                }
-            }
-        }
-        if (!pool) {
-            continue;
-        }
-        if (!alguna) {
-            ImGui::Separator();
-            ImGui::TextDisabled("Your progress on mission %s:", mision.c_str());
-            alguna = true;
-        }
-        ImGui::SameLine();
-        const float porCaja = (float)faltan / (float)pool;
-        ImGui::TextColored(faltan ? ImVec4(0.6f, 1.0f, 0.6f, 1.0f) : ImVec4(0.6f, 0.6f, 0.6f, 1.0f),
-                           "  %s: %d/%d missing (%.0f%% new per crate)",
-                           d.difficulty.c_str(), faltan, pool, porCaja * 100.0f);
-    }
-}
-
-static void DrawStrats() {
-    const std::vector<Strat> &strats = GetStrats();
-    if (strats.empty()) {
-        ImGui::TextColored(ImVec4(1, 0.6f, 0.4f, 1), "strats.tsv not loaded");
-        ImGui::TextDisabled("Expected at Mods\\Compendium\\strats.tsv");
-        return;
-    }
-
-    ImGui::TextWrapped(
-        "Community farming strategies. Mission numbers are checked against the game "
-        "data; the yields each guide claims are not verified. Source is shown for each.");
-    ImGui::Separator();
-
-    if (g_stratSel >= (int)strats.size()) {
-        g_stratSel = 0;
-    }
-
-    ImGui::BeginChild("listaStrats", ImVec2(Esc(420.0f), -AltoDrops()), true);
-    for (int i = 0; i < (int)strats.size(); i++) {
-        const Strat &s = strats[i];
-        ImGui::PushID(i);
-        if (ImGui::Selectable("##sel", g_stratSel == i, 0, ImVec2(0, Esc(46.0f)))) {
-            g_stratSel = i;
-        }
-        ImGui::SameLine(Esc(8.0f));
-        ImGui::BeginGroup();
-        ImGui::TextWrapped("%s", s.title.c_str());
-        if (s.mission == "any") {
-            ImGui::TextDisabled("general");
-        } else {
-            ImGui::TextDisabled("mission %s  ·  %s  ·  %s", s.mission.c_str(),
-                                s.difficulty.c_str(), s.className.c_str());
-        }
-        ImGui::EndGroup();
-        ImGui::PopID();
-    }
-    ImGui::EndChild();
-
-    ImGui::SameLine();
-
-    ImGui::BeginChild("detalleStrat", ImVec2(0.0f, -AltoDrops()), false);
-    const Strat &s = strats[g_stratSel];
-    ImGui::TextColored(ImVec4(1.0f, 0.85f, 0.4f, 1.0f), "%s", s.title.c_str());
-    if (s.mission != "any") {
-        ImGui::TextDisabled("mission %s  ·  %s  ·  %s", s.mission.c_str(),
-                            s.difficulty.c_str(), s.className.c_str());
-    }
-    ImGui::Separator();
-    ImGui::TextWrapped("%s", s.body.c_str());
-    ResumenMision(s.mission);
-    if (!s.source.empty()) {
-        ImGui::Separator();
-        ImGui::TextDisabled("source: %s", s.source.c_str());
-    }
-    ImGui::EndChild();
-}
-
-// ------------------------------------------------------------- misiones
-//
-// La pregunta al reves de la pestana Farming: no "a que mision voy" sino "de
-// esta mision, que me falta". Recorrer las 202 misiones contra las 1560 armas
-// en cada frame serian 300k comparaciones, asi que se cachea y se recalcula
-// cuando cambia la dificultad o el estado de obtenidas.
-
-static const char *ORDEN_DIF[4] = {"Normal", "Hard", "Hardest", "Inferno"};
-
-struct FilaMision {
-    const Drop *drop;
-    int falta;
-    int pool;
-};
-
-static std::vector<FilaMision> g_misiones;
-static int g_misDificultad = 3;
-static int g_misDifCalc = -1;
-static std::string g_misSel;
-
-static void CalcularMisiones() {
-    g_misiones.clear();
-    const Catalog &cat = GetCatalog();
-    const char *dif = ORDEN_DIF[g_misDificultad];
-    for (const Drop &d : GetDrops()) {
-        if (d.difficulty != dif) {
-            continue;
-        }
-        FilaMision f;
-        f.drop = &d;
-        f.falta = 0;
-        f.pool = 0;
-        for (const ClassData &c : cat.classes) {
-            for (const Weapon &w : c.weapons) {
-                if (w.tier <= d.tier && d.lo <= w.level && w.level <= d.hi) {
-                    f.pool++;
-                    if (!w.owned) {
-                        f.falta++;
-                    }
-                }
-            }
-        }
-        g_misiones.push_back(f);
-    }
-    g_misDifCalc = g_misDificultad;
-    g_misionesListas = true;
-}
-
-// Barras de lo que falta por franja de nivel, con la ventana de la mision
-// elegida resaltada. Deja ver si la mision pega donde tenes el hueco o si te
-// manda a un tramo que ya completaste.
-static void DrawHistograma(float lo, float hi) {
-    const int BANDAS = 12;
-    int falta[BANDAS] = {0};
-    int maxv = 1;
-    for (const ClassData &c : GetCatalog().classes) {
-        for (const Weapon &w : c.weapons) {
-            if (w.owned || !w.farmable) {
-                continue;
-            }
-            int b = w.level / 10;
-            if (b >= BANDAS) {
-                b = BANDAS - 1;
-            }
-            falta[b]++;
-        }
-    }
-    for (int i = 0; i < BANDAS; i++) {
-        if (falta[i] > maxv) {
-            maxv = falta[i];
-        }
-    }
-
-    ImGui::TextDisabled("Your gaps by level  (green = this mission's window)");
-    const float alto = Esc(76.0f);
-    const float ancho = ImGui::GetContentRegionAvail().x;
-    const ImVec2 p0 = ImGui::GetCursorScreenPos();
-    const float wb = ancho / BANDAS;
-    ImDrawList *dl = ImGui::GetWindowDrawList();
-    for (int i = 0; i < BANDAS; i++) {
-        const bool dentro = (float)(i * 10 + 9) >= lo && (float)(i * 10) <= hi;
-        const float h = alto * (float)falta[i] / (float)maxv;
-        dl->AddRectFilled(ImVec2(p0.x + i * wb + 1.0f, p0.y + alto - h),
-                          ImVec2(p0.x + (i + 1) * wb - 1.0f, p0.y + alto),
-                          dentro ? IM_COL32(120, 220, 130, 230) : IM_COL32(95, 100, 115, 200));
-        if (falta[i] > 0) {
-            char v[8];
-            snprintf(v, sizeof(v), "%d", falta[i]);
-            const float tw = ImGui::CalcTextSize(v).x;
-            dl->AddText(ImVec2(p0.x + i * wb + (wb - tw) * 0.5f, p0.y + alto - h - Esc(15.0f)),
-                        IM_COL32(210, 210, 220, 220), v);
-        }
-    }
-    ImGui::Dummy(ImVec2(ancho, alto));
-    for (int i = 0; i < BANDAS; i++) {
-        char etq[8];
-        snprintf(etq, sizeof(etq), "%d", i * 10);
-        const float tw = ImGui::CalcTextSize(etq).x;
-        dl->AddText(ImVec2(p0.x + i * wb + (wb - tw) * 0.5f, p0.y + alto + Esc(2.0f)),
-                    IM_COL32(150, 150, 160, 210), etq);
-    }
-    ImGui::Dummy(ImVec2(ancho, Esc(18.0f)));
-}
-
-static void DrawMisiones() {
-    if (GetDrops().empty()) {
-        ImGui::TextColored(ImVec4(1, 0.6f, 0.4f, 1), "missions.tsv not loaded");
-        return;
-    }
-    ImGui::SetNextItemWidth(Esc(180.0f));
-    if (ImGui::Combo("##dif", &g_misDificultad, "Normal\0Hard\0Hardest\0Inferno\0")) {
-        g_misionesListas = false;
-    }
-    ImGui::SameLine();
-    ImGui::TextWrapped("What is still missing from each mission's own pool.");
-
-    if (!g_misionesListas || g_misDifCalc != g_misDificultad) {
-        CalcularMisiones();
-    }
-
-    ImGui::BeginChild("listaMisiones", ImVec2(Esc(430.0f), -AltoDrops()), true);
-    const float anchoMis = ImGui::GetContentRegionAvail().x;
-    for (const FilaMision &f : g_misiones) {
-        ImGui::PushID(f.drop);
-        char etiqueta[160];
-        snprintf(etiqueta, sizeof(etiqueta), "%-10s %s", f.drop->mission.c_str(),
-                 f.drop->missionName.c_str());
-        if (ImGui::Selectable(etiqueta, g_misSel == f.drop->mission)) {
-            g_misSel = f.drop->mission;
-        }
-        char cuenta[32];
-        snprintf(cuenta, sizeof(cuenta), "%d / %d", f.falta, f.pool);
-        const float x = anchoMis - ImGui::CalcTextSize(cuenta).x;
-        ImGui::SameLine(x > 0.0f ? x : 0.0f);
-        ImGui::TextColored(f.falta ? ImVec4(0.75f, 1.0f, 0.75f, 1.0f)
-                                   : ImVec4(0.45f, 0.45f, 0.45f, 1.0f),
-                           "%s", cuenta);
-        ImGui::PopID();
-    }
-    ImGui::EndChild();
-
-    ImGui::SameLine();
-    ImGui::BeginChild("detalleMision", ImVec2(0.0f, -AltoDrops()), false);
-    const FilaMision *sel = nullptr;
-    for (const FilaMision &f : g_misiones) {
-        if (f.drop->mission == g_misSel) {
-            sel = &f;
-            break;
-        }
-    }
-    if (!sel) {
-        ImGui::TextDisabled("Pick a mission on the left.");
-    } else {
-        const Drop *d = sel->drop;
-        ImGui::TextColored(ImVec4(1.0f, 0.85f, 0.4f, 1.0f), "%s  %s", d->mission.c_str(),
-                           d->missionName.c_str());
-        ImGui::TextDisabled("%s  |  levels %.0f-%.0f  |  %d of %d missing  |  %.2f%% per crate",
-                            d->difficulty.c_str(), d->lo, d->hi, sel->falta, sel->pool,
-                            d->chance * 100.0f);
-        DrawHistograma(d->lo, d->hi);
-        ImGui::Separator();
-
-        const ImGuiTableFlags tf = ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg |
-                                   ImGuiTableFlags_BordersOuter;
-        if (ImGui::BeginTable("faltanAca", 4, tf, ImVec2(0.0f, 0.0f))) {
-            ImGui::TableSetupScrollFreeze(0, 1);
-            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, Esc(30.0f));
-            ImGui::TableSetupColumn("Weapon", ImGuiTableColumnFlags_WidthStretch);
-            ImGui::TableSetupColumn("Lv", ImGuiTableColumnFlags_WidthFixed, Esc(46.0f));
-            ImGui::TableSetupColumn("Class", ImGuiTableColumnFlags_WidthFixed, Esc(130.0f));
-            ImGui::TableHeadersRow();
-            for (ClassData &c : MutableCatalog().classes) {
-                for (Weapon &w : c.weapons) {
-                    if (w.owned || w.tier > d->tier || w.level < d->lo || w.level > d->hi) {
-                        continue;
-                    }
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::PushID(w.index);
-                    ImGui::PushStyleColor(ImGuiCol_Text, w.wish ? COLOR_WISH : COLOR_WISH_OFF);
-                    if (ImGui::Selectable(w.wish ? "\xE2\x99\xA5###wm" : "\xE2\x99\xA1###wm", false,
-                                          0, ImVec2(Esc(22.0f), 0.0f))) {
-                        AlternarWish(w);
-                    }
-                    ImGui::PopStyleColor();
-                    ImGui::PopID();
-                    ImGui::TableSetColumnIndex(1);
-                    ImGui::Text("%s", w.name.c_str());
-                    ImGui::TableSetColumnIndex(2);
-                    ImGui::Text("%d", w.level);
-                    ImGui::TableSetColumnIndex(3);
-                    ImGui::TextDisabled("%s", c.name.c_str());
-                }
-            }
-            ImGui::EndTable();
-        }
-    }
-    ImGui::EndChild();
-}
-
-// ------------------------------------------------------------------ ruta
-//
-// Cubrimiento de conjuntos, greedy: en cada paso se elige la mision que cubre
-// mas cosas de la wishlist que no cubrio ninguna anterior. No da el optimo,
-// pero para listas de este tamano la diferencia no importa.
-
-struct Paso {
-    const Drop *drop;
-    std::vector<std::string> cubre;
-};
-
-static std::vector<Paso> g_ruta;
-
-static void CalcularRuta() {
-    g_ruta.clear();
-    g_rutaLista = true;
-    std::vector<const Weapon *> pendientes;
-    for (const ClassData &c : GetCatalog().classes) {
-        for (const Weapon &w : c.weapons) {
-            if (w.wish && !w.owned && w.farmable) {
-                pendientes.push_back(&w);
-            }
-        }
-    }
-    while (!pendientes.empty() && g_ruta.size() < 10) {
-        const Drop *mejor = nullptr;
-        std::vector<const Weapon *> mejorCubre;
-        for (const Drop &d : GetDrops()) {
-            std::vector<const Weapon *> cubre;
-            for (const Weapon *w : pendientes) {
-                if (w->tier <= d.tier && d.lo <= w->level && w->level <= d.hi) {
-                    cubre.push_back(w);
-                }
-            }
-            if (cubre.empty()) {
-                continue;
-            }
-            const bool gana = cubre.size() > mejorCubre.size() ||
-                              (mejor && cubre.size() == mejorCubre.size() &&
-                               d.chance > mejor->chance);
-            if (gana) {
-                mejor = &d;
-                mejorCubre = cubre;
-            }
-        }
-        if (!mejor) {
-            break;
-        }
-        Paso paso;
-        paso.drop = mejor;
-        for (const Weapon *w : mejorCubre) {
-            paso.cubre.push_back(w->name);
-            pendientes.erase(std::remove(pendientes.begin(), pendientes.end(), w),
-                             pendientes.end());
-        }
-        g_ruta.push_back(paso);
-    }
-}
-
-static void DrawRuta() {
-    if (!g_rutaLista) {
-        CalcularRuta();
-    }
-    if (g_ruta.empty()) {
-        ImGui::TextDisabled("Nothing farmable on your wishlist right now.");
-        return;
-    }
-    for (size_t i = 0; i < g_ruta.size(); i++) {
-        const Paso &paso = g_ruta[i];
-        ImGui::TextColored(ImVec4(0.55f, 0.75f, 1.0f, 1.0f), "%d.", (int)i + 1);
-        ImGui::SameLine();
-        ImGui::Text("%s %s", paso.drop->mission.c_str(), paso.drop->missionName.c_str());
-        ImGui::SameLine();
-        ImGui::TextDisabled("(%s, %.2f%% per crate)", paso.drop->difficulty.c_str(),
-                            paso.drop->chance * 100.0f);
-        for (const std::string &nombre : paso.cubre) {
-            ImGui::TextColored(COLOR_WISH, "      \xE2\x99\xA5 %s", nombre.c_str());
-        }
-    }
+void DescartarNuevas() {
+    g_nuevas.clear();
+    g_nuevasWish.clear();
 }
 
 // El save se revisa cada dos segundos y no por frame: alcanza de sobra para
@@ -657,9 +92,6 @@ static void RevisarSave() {
     if (!g_nuevasWish.empty()) {
         g_toastHasta = ahora + 9000;
     }
-    g_planListo = false;
-    g_misionesListas = false;
-    g_rutaLista = false;
 }
 
 static bool ToastActivo() {
@@ -667,19 +99,39 @@ static bool ToastActivo() {
 }
 
 static void DrawToast() {
+    ui::SetScale(g_escala * 0.8f);
+    const char *title = "Wishlisted weapon dropped";
+    float width = ui::Measure(ui::g_fontSemi, 15.0f, title).x;
+    for (const std::string &nombre : g_nuevasWish) {
+        const float w = ui::Measure(nullptr, 14.0f, nombre.c_str()).x;
+        width = w > width ? w : width;
+    }
+    const ImVec2 size(width + ui::D(60.0f), ui::D(46.0f) + ui::D(24.0f) * (float)g_nuevasWish.size());
     const ImGuiViewport *vp = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(
-        ImVec2(vp->WorkPos.x + vp->WorkSize.x - Esc(28.0f), vp->WorkPos.y + Esc(28.0f)),
-        ImGuiCond_Always, ImVec2(1.0f, 0.0f));
-    ImGui::SetNextWindowBgAlpha(0.85f);
-    const ImGuiWindowFlags flags =
-        ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
-        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
-        ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoInputs;
-    if (ImGui::Begin("##toastWish", nullptr, flags)) {
-        ImGui::TextColored(COLOR_WISH, "\xE2\x99\xA5 Wishlisted item dropped!");
+    ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + vp->WorkSize.x - ui::D(28.0f), vp->WorkPos.y + ui::D(28.0f)),
+                            ImGuiCond_Always, ImVec2(1.0f, 0.0f));
+    ImGui::SetNextWindowSize(size, ImGuiCond_Always);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ui::Rgb(ui::kBg, 0.95f));
+    const ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings |
+                                   ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav |
+                                   ImGuiWindowFlags_NoInputs;
+    const bool visible = ImGui::Begin("##toastWish", nullptr, flags);
+    ImGui::PopStyleColor();
+    ImGui::PopStyleVar(3);
+    if (visible) {
+        ImDrawList *dl = ImGui::GetWindowDrawList();
+        const ImVec2 o = ImGui::GetWindowPos();
+        dl->AddRect(o, ImVec2(o.x + size.x, o.y + size.y), ui::Rgb(ui::kLine), 0.0f, ui::D(1.0f));
+        dl->AddRectFilled(o, ImVec2(o.x + ui::D(3.0f), o.y + size.y), ui::Rgb(ui::kPink));
+        ui::Heart(dl, ImVec2(o.x + ui::D(24.0f), o.y + ui::D(23.0f)), ui::D(16.0f), ui::kPink);
+        ui::PaintText(dl, ui::g_fontSemi, 15.0f, ImVec2(o.x + ui::D(40.0f), o.y + ui::D(13.0f)), ui::kText, title);
+        float y = o.y + ui::D(42.0f);
         for (const std::string &nombre : g_nuevasWish) {
-            ImGui::Text("   %s", nombre.c_str());
+            ui::PaintText(dl, nullptr, 14.0f, ImVec2(o.x + ui::D(40.0f), y), ui::kSoft, nombre.c_str());
+            y += ui::D(24.0f);
         }
     }
     ImGui::End();

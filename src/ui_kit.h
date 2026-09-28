@@ -23,6 +23,7 @@ constexpr uint32_t kRowLine = 0x1D221F;
 constexpr uint32_t kKeyLine = 0x3A413C;
 constexpr uint32_t kDanger = 0xFF8C73;
 constexpr uint32_t kMaxed = 0xFAC775;
+constexpr uint32_t kPink = 0xF27BA0;
 
 extern ImFont *g_fontLabel;
 extern ImFont *g_fontBold;
@@ -44,6 +45,8 @@ std::string FitText(ImFont *f, float px, const std::string &s, float maxWidth, b
 void FittedText(ImDrawList *dl, ImFont *f, float px, ImVec2 p, uint32_t col, const std::string &s, float maxWidth);
 float KeyHint(ImDrawList *dl, ImVec2 p, const char *key, uint32_t text, uint32_t border);
 void DashedRect(ImDrawList *dl, ImVec2 a, ImVec2 b, uint32_t col);
+void Heart(ImDrawList *dl, ImVec2 center, float size, uint32_t col);
+float WrappedText(ImDrawList *dl, ImFont *f, float px, ImVec2 p, uint32_t col, const char *t, float wrapWidth);
 std::string KeyName(int vk);
 
 enum class ButtonKind { Primary, Normal, Danger };

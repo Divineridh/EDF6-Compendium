@@ -31,7 +31,6 @@ constexpr float kLegendH = 38.0f;
 constexpr float kDropRowH = 35.0f;
 constexpr float kDesignScale = 0.8f;
 
-constexpr uint32_t kPink = 0xF27BA0;
 constexpr uint32_t kFarmCard = 0x10261A;
 
 const char *const kDifficulties[] = {"Normal", "Hard", "Hardest", "Inferno"};
@@ -39,8 +38,12 @@ constexpr int kDifficultyCount = 4;
 const uint32_t kDifficultyColors[kDifficultyCount] = {0x7FB3FF, 0xE8C46A, 0xFF9A5C, 0xFF6B6B};
 
 enum class Filter { All, Missing, NotMaxed, Wishlist };
+enum class View { Class, Farming, Missions, Strats };
+const char *const kViewNames[] = {"Farming", "Missions", "Strats"};
+constexpr int kViewCount = 3;
 
 struct PanelState {
+    View view = View::Class;
     int viewedClass = 0;
     int category = -1;
     Filter filter = Filter::All;
@@ -49,6 +52,12 @@ struct PanelState {
     int selected = -1;
     int difficulty = -1;
     bool scrollToSelected = false;
+    int farmClass = -1;
+    bool farmWishOnly = false;
+    int missionDifficulty = 3;
+    std::string mission;
+    int strat = 0;
+    unsigned version = 0;
 };
 
 PanelState g;
@@ -59,6 +68,7 @@ struct Counts {
     int maxed = 0;
     int wished = 0;
     int notMaxed = 0;
+    int farmableMissing = 0;
 };
 
 struct Category {
@@ -84,6 +94,7 @@ Counts CountOf(const std::vector<Weapon> &weapons, int category) {
         c.maxed += w.starred ? 1 : 0;
         c.wished += w.wish ? 1 : 0;
         c.notMaxed += w.owned && !w.starred ? 1 : 0;
+        c.farmableMissing += !w.owned && w.farmable ? 1 : 0;
     }
     return c;
 }
@@ -195,15 +206,6 @@ uint32_t DifficultyColor(const std::string &name) {
     return i < 0 ? kSoft : kDifficultyColors[i];
 }
 
-void Heart(ImDrawList *dl, ImVec2 center, float size, uint32_t col) {
-    const float r = size * 0.27f;
-    const ImU32 c = Rgb(col);
-    dl->AddCircleFilled(ImVec2(center.x - r * 0.95f, center.y - r * 0.35f), r, c, 16);
-    dl->AddCircleFilled(ImVec2(center.x + r * 0.95f, center.y - r * 0.35f), r, c, 16);
-    dl->AddTriangleFilled(ImVec2(center.x - r * 1.9f, center.y - r * 0.15f),
-                          ImVec2(center.x + r * 1.9f, center.y - r * 0.15f), ImVec2(center.x, center.y + r * 1.9f), c);
-}
-
 void StatusSquare(ImDrawList *dl, ImVec2 p, const Weapon &w) {
     const ImVec2 q(p.x + D(9.0f), p.y + D(9.0f));
     if (!w.owned) {
@@ -228,13 +230,41 @@ void SelectWeapon(int index) {
 void ToggleWish(Weapon &w) {
     w.wish = !w.wish;
     SaveWishlist();
+    g.version++;
 }
 
-void SwitchClass(int c, int count) {
-    g.viewedClass = (c + count) % count;
-    g.category = -1;
-    g.selected = -1;
+int CurrentTab(int classCount) {
+    return g.view == View::Class ? g.viewedClass : classCount + (int)g.view - 1;
+}
+
+void SwitchTab(int tab, int classCount) {
+    const int total = classCount + kViewCount;
+    tab = (tab + total) % total;
+    if (tab >= classCount) {
+        g.view = (View)(tab - classCount + 1);
+        return;
+    }
+    if (g.view != View::Class || tab != g.viewedClass) {
+        g.category = -1;
+        g.selected = -1;
+    }
+    g.view = View::Class;
+    g.viewedClass = tab;
     g.scrollToSelected = true;
+}
+
+std::string StatsLines(const Weapon &w) {
+    std::string out = w.name + "\n";
+    size_t start = 0;
+    while (start < w.stats.size()) {
+        size_t end = w.stats.find(" | ", start);
+        if (end == std::string::npos) {
+            end = w.stats.size();
+        }
+        out += "\n" + w.stats.substr(start, end - start);
+        start = end + 3;
+    }
+    return out;
 }
 
 std::string SaveAge() {
@@ -290,16 +320,37 @@ void DrawHeader(ImDrawList *dl, ImVec2 o, float w, Catalog &cat, bool &open) {
         ImGui::SetCursorScreenPos(ImVec2(x, o.y));
         ImGui::PushID(c);
         if (ImGui::InvisibleButton("tab", ImVec2(tabW, h))) {
-            SwitchClass(c, classCount);
+            SwitchTab(c, classCount);
         }
         const bool hovered = ImGui::IsItemHovered();
         ImGui::PopID();
 
-        const bool viewed = c == g.viewedClass;
+        const bool viewed = g.view == View::Class && c == g.viewedClass;
         const float textY = o.y + (h - nameSize.y) * 0.5f;
         PaintText(dl, g_fontLabel, 16.0f, ImVec2(x + D(16.0f), textY), viewed || hovered ? kText : kMuted, name);
         PaintText(dl, g_fontLabel, 12.0f,
                   ImVec2(x + D(16.0f) + nameSize.x + D(7.0f), textY + nameSize.y - pctSize.y - D(2.0f)), kFaint, pct);
+        if (viewed) {
+            dl->AddRectFilled(ImVec2(x, o.y + h - D(2.0f)), ImVec2(x + tabW, o.y + h), Rgb(kGreen));
+        }
+        x += tabW;
+    }
+    x += D(8.0f);
+    dl->AddLine(ImVec2(x, o.y + D(18.0f)), ImVec2(x, o.y + h - D(18.0f)), Rgb(kLine), D(1.0f));
+    x += D(8.0f);
+    for (int v = 0; v < kViewCount; v++) {
+        const ImVec2 nameSize = Measure(g_fontLabel, 16.0f, kViewNames[v]);
+        const float tabW = D(16.0f) + nameSize.x + D(16.0f);
+        ImGui::SetCursorScreenPos(ImVec2(x, o.y));
+        ImGui::PushID(100 + v);
+        if (ImGui::InvisibleButton("view", ImVec2(tabW, h))) {
+            SwitchTab(classCount + v, classCount);
+        }
+        const bool hovered = ImGui::IsItemHovered();
+        ImGui::PopID();
+        const bool viewed = (int)g.view == v + 1;
+        PaintText(dl, g_fontLabel, 16.0f, ImVec2(x + D(16.0f), o.y + (h - nameSize.y) * 0.5f),
+                  viewed || hovered ? kText : kMuted, kViewNames[v]);
         if (viewed) {
             dl->AddRectFilled(ImVec2(x, o.y + h - D(2.0f)), ImVec2(x + tabW, o.y + h), Rgb(kGreen));
         }
@@ -341,6 +392,31 @@ void DrawHeader(ImDrawList *dl, ImVec2 o, float w, Catalog &cat, bool &open) {
                                             : SavePathUsado());
     }
 
+    const std::vector<std::string> &fresh = NuevasDesdeUltimaMision();
+    if (!fresh.empty()) {
+        char label[32];
+        snprintf(label, sizeof(label), "+%d new", (int)fresh.size());
+        const ImVec2 ls = Measure(g_fontSemi, 13.0f, label);
+        const ImVec2 a(statusX - D(30.0f) - ls.x - D(16.0f), o.y + D(16.0f));
+        const ImVec2 b(a.x + ls.x + D(16.0f), o.y + h - D(16.0f));
+        ImGui::SetCursorScreenPos(a);
+        if (ImGui::InvisibleButton("fresh", ImVec2(b.x - a.x, b.y - a.y))) {
+            DescartarNuevas();
+        } else {
+            dl->AddRectFilled(a, b, Rgb(kFarmCard));
+            dl->AddRect(a, b, Rgb(kGreen), 0.0f, D(1.0f));
+            PaintText(dl, g_fontSemi, 13.0f, ImVec2(a.x + D(8.0f), a.y + (b.y - a.y - ls.y) * 0.5f), kGreen, label);
+            if (ImGui::IsItemHovered()) {
+                std::string list = "New since your last mission:\n";
+                for (const std::string &name : fresh) {
+                    list += "\n" + name;
+                }
+                list += "\n\nClick to dismiss.";
+                ImGui::SetTooltip("%s", list.c_str());
+            }
+        }
+    }
+
     dl->AddLine(ImVec2(o.x, o.y + h), ImVec2(o.x + w, o.y + h), Rgb(kLine), D(1.0f));
 }
 
@@ -351,12 +427,24 @@ void StatBlock(ImDrawList *dl, float x, float top, const char *label, int value,
     PaintText(dl, g_fontBold, 20.0f, ImVec2(x, top + D(33.0f)), col, v);
 }
 
+struct SegmentItem {
+    const char *label;
+    int count;
+};
+
+float SegmentWidth(const SegmentItem &item) {
+    char n[16];
+    snprintf(n, sizeof(n), "%d", item.count);
+    const float countW = item.count >= 0 ? D(7.0f) + Measure(g_fontLabel, 12.0f, n).x : 0.0f;
+    return D(14.0f) + Measure(g_fontSemi, 15.0f, item.label).x + countW + D(14.0f);
+}
+
 bool Segment(ImDrawList *dl, float &x, float y, float h, const char *label, int count, bool selected, int id) {
     char n[16];
     snprintf(n, sizeof(n), "%d", count);
     const ImVec2 labelSize = Measure(g_fontSemi, 15.0f, label);
     const ImVec2 countSize = Measure(g_fontLabel, 12.0f, n);
-    const float w = D(14.0f) + labelSize.x + D(7.0f) + countSize.x + D(14.0f);
+    const float w = SegmentWidth(SegmentItem{label, count});
     ImGui::SetCursorScreenPos(ImVec2(x, y));
     ImGui::PushID(id);
     const bool clicked = ImGui::InvisibleButton("segment", ImVec2(w, h));
@@ -367,9 +455,30 @@ bool Segment(ImDrawList *dl, float &x, float y, float h, const char *label, int 
     }
     const float ty = y + (h - labelSize.y) * 0.5f;
     PaintText(dl, g_fontSemi, 15.0f, ImVec2(x + D(14.0f), ty), selected ? kText : kSoft, label);
-    PaintText(dl, g_fontLabel, 12.0f, ImVec2(x + D(14.0f) + labelSize.x + D(7.0f), ty + labelSize.y - countSize.y - D(2.0f)),
-              kFaint, n);
+    if (count >= 0) {
+        PaintText(dl, g_fontLabel, 12.0f,
+                  ImVec2(x + D(14.0f) + labelSize.x + D(7.0f), ty + labelSize.y - countSize.y - D(2.0f)), kFaint, n);
+    }
     x += w;
+    return clicked;
+}
+
+int SegmentGroup(ImDrawList *dl, float rightX, float y, const SegmentItem *items, int n, int selected, int idBase,
+                 float &left) {
+    const float h = D(42.0f);
+    float groupW = 0.0f;
+    for (int i = 0; i < n; i++) {
+        groupW += SegmentWidth(items[i]);
+    }
+    float x = rightX - groupW;
+    left = x;
+    int clicked = -1;
+    for (int i = 0; i < n; i++) {
+        if (Segment(dl, x, y, h, items[i].label, items[i].count, i == selected, idBase + i)) {
+            clicked = i;
+        }
+    }
+    dl->AddRect(ImVec2(left, y), ImVec2(left + groupW, y + h), Rgb(kKeyLine), 0.0f, D(1.0f));
     return clicked;
 }
 
@@ -417,33 +526,25 @@ void DrawStats(ImDrawList *dl, ImVec2 o, float w, const Counts &counts) {
     ImGui::PopStyleColor(3);
     ImGui::PopFont();
 
-    const float segH = D(42.0f);
-    float x = o.x + w - D(20.0f);
-    const struct {
-        const char *label;
-        Filter filter;
-        int count;
-    } segments[] = {
-        {"All", Filter::All, counts.total},
-        {"Missing", Filter::Missing, counts.total - counts.owned},
-        {"Not maxed", Filter::NotMaxed, counts.notMaxed},
-        {"Wishlist", Filter::Wishlist, counts.wished},
+    const SegmentItem segments[] = {
+        {"All", counts.total},
+        {"Missing", counts.total - counts.owned},
+        {"Not maxed", counts.notMaxed},
+        {"Wishlist", counts.wished},
     };
-    float groupW = 0.0f;
-    for (const auto &s : segments) {
-        char n[16];
-        snprintf(n, sizeof(n), "%d", s.count);
-        groupW += D(14.0f) + Measure(g_fontSemi, 15.0f, s.label).x + D(7.0f) + Measure(g_fontLabel, 12.0f, n).x + D(14.0f);
+    float left = 0.0f;
+    const int clicked = SegmentGroup(dl, o.x + w - D(20.0f), searchY, segments, 4, (int)g.filter, 0, left);
+    if (clicked >= 0) {
+        g.filter = (Filter)clicked;
+        g.scrollToSelected = true;
     }
-    x -= groupW;
-    const float groupX = x;
-    for (int i = 0; i < 4; i++) {
-        if (Segment(dl, x, searchY, segH, segments[i].label, segments[i].count, g.filter == segments[i].filter, i)) {
-            g.filter = segments[i].filter;
-            g.scrollToSelected = true;
-        }
+
+    const float missingX = o.x + D(348.0f);
+    if (ImGui::IsMouseHoveringRect(ImVec2(missingX, top), ImVec2(missingX + D(70.0f), top + D(kStatsH)))) {
+        const int missing = counts.total - counts.owned;
+        ImGui::SetTooltip("%d of the %d missing can drop from crates.\nThe other %d are mission or DLC rewards.",
+                          counts.farmableMissing, missing, missing - counts.farmableMissing);
     }
-    dl->AddRect(ImVec2(groupX, searchY), ImVec2(groupX + groupW, searchY + segH), Rgb(kKeyLine), 0.0f, D(1.0f));
 
     dl->AddLine(ImVec2(o.x, top + D(kStatsH)), ImVec2(o.x + w, top + D(kStatsH)), Rgb(kLine), D(1.0f));
 }
@@ -610,6 +711,9 @@ void DrawList(ImDrawList *dl, float x, float w, float bodyTop, float bodyBottom,
                 }
                 Heart(ldl, ImVec2(col.heart, p.y + rowH * 0.5f), D(16.0f),
                       weapon.wish ? kPink : (hovered && onHeart ? kMuted : kKeyLine));
+                if (!onHeart && !weapon.stats.empty() && ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
+                    ImGui::SetTooltip("%s", StatsLines(weapon).c_str());
+                }
             }
             DrawListRow(ldl, p, rowW, r);
         }
@@ -681,6 +785,11 @@ void DrawDetail(ImDrawList *dl, float x, float w, float bodyTop, float bodyBotto
     SpacedText(dl, g_fontLabel, 12.0f, ImVec2(left, y), kFaint, crumb, 1.5f);
     y += D(22.0f);
     FittedText(dl, g_fontBold, 28.0f, ImVec2(left, y), kText, weapon->name, right - left);
+    const ImVec2 titleSize = Measure(g_fontBold, 28.0f, weapon->name.c_str());
+    if (!weapon->stats.empty() &&
+        ImGui::IsMouseHoveringRect(ImVec2(left, y), ImVec2(left + std::min(titleSize.x, right - left), y + titleSize.y))) {
+        ImGui::SetTooltip("%s", StatsLines(*weapon).c_str());
+    }
     y += D(46.0f);
 
     const char *badge = weapon->owned ? "Owned" : "Missing";
@@ -842,6 +951,701 @@ void DrawDetail(ImDrawList *dl, float x, float w, float bodyTop, float bodyBotto
     ImGui::EndChild();
 }
 
+float SpacedWidth(ImFont *f, float px, const char *t, float spacing) {
+    int glyphs = 0;
+    for (const char *c = t; *c; c++) {
+        glyphs += ((unsigned char)*c & 0xC0) != 0x80 ? 1 : 0;
+    }
+    return Measure(f, px, t).x + D(spacing) * glyphs;
+}
+
+void HeaderLabel(ImDrawList *dl, float x, float y, const char *label) {
+    SpacedText(dl, g_fontLabel, 11.0f, ImVec2(x, y), kFaint, label, 1.5f);
+}
+
+void HeaderLabelRight(ImDrawList *dl, float right, float y, const char *label) {
+    HeaderLabel(dl, right - SpacedWidth(g_fontLabel, 11.0f, label, 1.5f), y, label);
+}
+
+void MonoRight(ImDrawList *dl, float right, float y, float px, uint32_t col, const char *t) {
+    const ImVec2 s = Measure(g_fontMono, px, t);
+    PaintText(dl, g_fontMono, px, ImVec2(right - s.x, y), col, t);
+}
+
+void CenteredMessage(ImDrawList *dl, float x, float w, float top, float bottom, const char *title, const char *hint) {
+    const ImVec2 ts = Measure(g_fontBold, 18.0f, title);
+    const float cy = top + (bottom - top) * 0.5f;
+    PaintText(dl, g_fontBold, 18.0f, ImVec2(x + (w - ts.x) * 0.5f, cy - ts.y), kText, title);
+    if (hint) {
+        const ImVec2 hs = Measure(nullptr, 14.0f, hint);
+        PaintText(dl, nullptr, 14.0f, ImVec2(x + (w - hs.x) * 0.5f, cy + D(6.0f)), kMuted, hint);
+    }
+}
+
+void ViewTitle(ImDrawList *dl, ImVec2 o, float w, const char *title, const char *subtitle) {
+    const float top = o.y + D(kHeaderH);
+    PaintText(dl, g_fontBold, 22.0f, ImVec2(o.x + D(20.0f), top + D(10.0f)), kText, title);
+    PaintText(dl, nullptr, 14.0f, ImVec2(o.x + D(20.0f), top + D(44.0f)), kMuted, subtitle);
+    dl->AddLine(ImVec2(o.x, top + D(kStatsH)), ImVec2(o.x + w, top + D(kStatsH)), Rgb(kLine), D(1.0f));
+}
+
+bool InPool(const Weapon &w, const Drop &d) {
+    return w.tier <= d.tier && d.lo <= w.level && w.level <= d.hi;
+}
+
+float CratesForAll(int pool, int missing) {
+    double total = 0.0;
+    for (int j = 1; j <= missing; j++) {
+        total += 1.0 / j;
+    }
+    return (float)(pool * total);
+}
+
+struct PlanRow {
+    const Drop *drop;
+    int missing;
+    int pool;
+    float perCrate;
+    float cratesOne;
+    float cratesAll;
+};
+
+struct PlanCache {
+    bool valid = false;
+    unsigned version = 0;
+    unsigned long long read = 0;
+    int cls = -1;
+    bool wishOnly = false;
+    std::vector<PlanRow> rows;
+};
+
+PlanCache g_plan;
+
+const std::vector<PlanRow> &PlanRows(const Catalog &cat) {
+    const unsigned long long read = MomentoLecturaSave();
+    if (g_plan.valid && g_plan.version == g.version && g_plan.read == read && g_plan.cls == g.farmClass &&
+        g_plan.wishOnly == g.farmWishOnly) {
+        return g_plan.rows;
+    }
+    g_plan.rows.clear();
+    for (const Drop &d : GetDrops()) {
+        int pool = 0;
+        int missing = 0;
+        for (int c = 0; c < (int)cat.classes.size(); c++) {
+            const bool counted = g.farmClass == -1 || g.farmClass == c;
+            for (const Weapon &w : cat.classes[c].weapons) {
+                if (!InPool(w, d)) {
+                    continue;
+                }
+                pool++;
+                if (!w.owned && counted && (!g.farmWishOnly || w.wish)) {
+                    missing++;
+                }
+            }
+        }
+        if (!missing || !pool) {
+            continue;
+        }
+        PlanRow r{&d, missing, pool, (float)missing / pool, 0.0f, 0.0f};
+        r.cratesOne = 1.0f / r.perCrate;
+        r.cratesAll = CratesForAll(pool, missing);
+        g_plan.rows.push_back(r);
+    }
+    std::sort(g_plan.rows.begin(), g_plan.rows.end(),
+              [](const PlanRow &a, const PlanRow &b) { return a.perCrate > b.perCrate; });
+    g_plan.valid = true;
+    g_plan.version = g.version;
+    g_plan.read = read;
+    g_plan.cls = g.farmClass;
+    g_plan.wishOnly = g.farmWishOnly;
+    return g_plan.rows;
+}
+
+struct RouteStep {
+    const Drop *drop;
+    std::vector<const Weapon *> covers;
+};
+
+struct RouteCache {
+    bool valid = false;
+    unsigned version = 0;
+    unsigned long long read = 0;
+    std::vector<RouteStep> steps;
+};
+
+RouteCache g_route;
+
+const std::vector<RouteStep> &Route(const Catalog &cat) {
+    const unsigned long long read = MomentoLecturaSave();
+    if (g_route.valid && g_route.version == g.version && g_route.read == read) {
+        return g_route.steps;
+    }
+    g_route.steps.clear();
+    std::vector<const Weapon *> pending;
+    for (const ClassData &c : cat.classes) {
+        for (const Weapon &w : c.weapons) {
+            if (w.wish && !w.owned && w.farmable) {
+                pending.push_back(&w);
+            }
+        }
+    }
+    while (!pending.empty() && g_route.steps.size() < 10) {
+        const Drop *best = nullptr;
+        std::vector<const Weapon *> bestCovers;
+        for (const Drop &d : GetDrops()) {
+            std::vector<const Weapon *> covers;
+            for (const Weapon *w : pending) {
+                if (InPool(*w, d)) {
+                    covers.push_back(w);
+                }
+            }
+            if (covers.empty()) {
+                continue;
+            }
+            const bool wins = covers.size() > bestCovers.size() ||
+                              (best && covers.size() == bestCovers.size() && d.chance > best->chance);
+            if (wins) {
+                best = &d;
+                bestCovers = covers;
+            }
+        }
+        if (!best) {
+            break;
+        }
+        for (const Weapon *w : bestCovers) {
+            pending.erase(std::remove(pending.begin(), pending.end(), w), pending.end());
+        }
+        g_route.steps.push_back(RouteStep{best, bestCovers});
+    }
+    g_route.valid = true;
+    g_route.version = g.version;
+    g_route.read = read;
+    return g_route.steps;
+}
+
+void DrawFarmingBar(ImDrawList *dl, ImVec2 o, float w, const Catalog &cat) {
+    ViewTitle(dl, o, w, "Where to farm next", "Chance that a crate gives you a weapon you don't have yet.");
+    const float y = o.y + D(kHeaderH) + D(17.0f);
+    const SegmentItem modes[] = {{"Everything missing", -1}, {"Wishlist only", -1}};
+    float left = 0.0f;
+    const int mode = SegmentGroup(dl, o.x + w - D(20.0f), y, modes, 2, g.farmWishOnly ? 1 : 0, 20, left);
+    if (mode >= 0) {
+        g.farmWishOnly = mode == 1;
+    }
+    std::vector<SegmentItem> classes;
+    classes.push_back(SegmentItem{"All classes", -1});
+    for (const ClassData &c : cat.classes) {
+        classes.push_back(SegmentItem{c.name.c_str(), -1});
+    }
+    float classesLeft = 0.0f;
+    const int cls = SegmentGroup(dl, left - D(16.0f), y, classes.data(), (int)classes.size(), g.farmClass + 1, 30,
+                                 classesLeft);
+    if (cls >= 0) {
+        g.farmClass = cls - 1;
+    }
+}
+
+void DrawRoute(ImDrawList *dl, float x, float w, float bodyTop, float bodyBottom, const Catalog &cat) {
+    SpacedText(dl, g_fontLabel, 12.0f, ImVec2(x + D(24.0f), bodyTop + D(20.0f)), kFaint, "ROUTE", 1.5f);
+    PaintText(dl, nullptr, 13.0f, ImVec2(x + D(24.0f), bodyTop + D(40.0f)), kMuted,
+              "Fewest missions that cover your wishlist");
+    const std::vector<RouteStep> &steps = Route(cat);
+    const float listTop = bodyTop + D(70.0f);
+    if (steps.empty()) {
+        CenteredMessage(dl, x, w, listTop, bodyBottom, "No route",
+                        EnWishlist() == 0 ? "Mark weapons with W or the heart." : "Nothing on your wishlist drops from a crate.");
+        return;
+    }
+    ImGui::SetCursorScreenPos(ImVec2(x, listTop));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::BeginChild("route", ImVec2(w, bodyBottom - listTop), ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground);
+    ImGui::PopStyleVar();
+    ImDrawList *rdl = ImGui::GetWindowDrawList();
+    const float innerW = ImGui::GetContentRegionAvail().x;
+    for (size_t i = 0; i < steps.size(); i++) {
+        const RouteStep &s = steps[i];
+        const ImVec2 p = ImGui::GetCursorScreenPos();
+        const float left = p.x + D(24.0f);
+        const ImVec2 box(left, p.y + D(2.0f));
+        rdl->AddRect(box, ImVec2(box.x + D(24.0f), box.y + D(24.0f)), Rgb(kKeyLine), 0.0f, D(1.0f));
+        char n[8];
+        snprintf(n, sizeof(n), "%d", (int)i + 1);
+        const ImVec2 ns = Measure(g_fontMono, 13.0f, n);
+        PaintText(rdl, g_fontMono, 13.0f, ImVec2(box.x + (D(24.0f) - ns.x) * 0.5f, box.y + (D(24.0f) - ns.y) * 0.5f),
+                  kSoft, n);
+        char title[160];
+        snprintf(title, sizeof(title), "%s \xC2\xB7 %s %s", s.drop->difficulty.c_str(), s.drop->mission.c_str(),
+                 s.drop->missionName.c_str());
+        FittedText(rdl, g_fontSemi, 15.0f, ImVec2(left + D(36.0f), p.y + D(2.0f)), kText, title,
+                   innerW - D(36.0f) - D(48.0f));
+        char sub[64];
+        snprintf(sub, sizeof(sub), "%.2f%% per crate \xC2\xB7 covers %d", s.drop->chance * 100.0f, (int)s.covers.size());
+        PaintText(rdl, nullptr, 13.0f, ImVec2(left + D(36.0f), p.y + D(24.0f)), kMuted, sub);
+        float y = p.y + D(50.0f);
+        for (const Weapon *weapon : s.covers) {
+            Heart(rdl, ImVec2(left + D(44.0f), y + D(10.0f)), D(12.0f), kPink);
+            FittedText(rdl, nullptr, 14.0f, ImVec2(left + D(58.0f), y), kSoft, weapon->name, innerW - D(58.0f) - D(48.0f));
+            y += D(24.0f);
+        }
+        ImGui::Dummy(ImVec2(innerW, y - p.y + D(14.0f)));
+    }
+    ImGui::EndChild();
+}
+
+void DrawFarming(ImDrawList *dl, ImVec2 o, float w, float bodyTop, float bodyBottom, const Catalog &cat) {
+    const float routeW = g.farmWishOnly ? D(460.0f) : 0.0f;
+    const float x = o.x;
+    const float tableW = w - routeW;
+    const float right = x + tableW - ImGui::GetStyle().ScrollbarSize - D(20.0f);
+    const float colNum = x + D(120.0f);
+    const float colName = x + D(170.0f);
+    const float colMissing = right - D(470.0f);
+    const float colPool = right - D(390.0f);
+    const float colPer = right - D(260.0f);
+    const float colOne = right - D(130.0f);
+    const float headerY = bodyTop + D(11.0f);
+    HeaderLabel(dl, x + D(20.0f), headerY, "DIFF");
+    HeaderLabel(dl, colNum, headerY, "#");
+    HeaderLabel(dl, colName, headerY, "MISSION");
+    HeaderLabelRight(dl, colMissing, headerY, g.farmWishOnly ? "WANTED" : "MISSING");
+    HeaderLabelRight(dl, colPool, headerY, "POOL");
+    HeaderLabelRight(dl, colPer, headerY, "NEW PER CRATE");
+    HeaderLabelRight(dl, colOne, headerY, "CRATES FOR 1");
+    HeaderLabelRight(dl, right, headerY, "FOR ALL");
+    dl->AddLine(ImVec2(x, bodyTop + D(kListHeaderH)), ImVec2(x + tableW, bodyTop + D(kListHeaderH)), Rgb(kLine),
+                D(1.0f));
+    if (routeW > 0.0f) {
+        dl->AddLine(ImVec2(x + tableW, bodyTop), ImVec2(x + tableW, bodyBottom), Rgb(kLine), D(1.0f));
+        DrawRoute(dl, x + tableW, routeW, bodyTop, bodyBottom, cat);
+    }
+
+    const std::vector<PlanRow> &rows = PlanRows(cat);
+    const float listTop = bodyTop + D(kListHeaderH) + D(1.0f);
+    if (rows.empty()) {
+        const char *why = "Nothing left to find in any crate.";
+        if (g.farmWishOnly) {
+            why = EnWishlist() == 0 ? "Your wishlist is empty: mark weapons with W or the heart."
+                                    : "Nothing on your wishlist drops from a crate.";
+        }
+        CenteredMessage(dl, x, tableW, listTop, bodyBottom, "No missions to suggest", why);
+        return;
+    }
+    ImGui::SetCursorScreenPos(ImVec2(x, listTop));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::BeginChild("plan", ImVec2(tableW, bodyBottom - listTop), ImGuiChildFlags_None,
+                      ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_AlwaysVerticalScrollbar);
+    ImGui::PopStyleVar();
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
+    ImDrawList *pdl = ImGui::GetWindowDrawList();
+    const float rowH = D(kRowH);
+    const float rowW = ImGui::GetContentRegionAvail().x;
+    ImGuiListClipper clipper;
+    clipper.Begin((int)rows.size(), rowH);
+    while (clipper.Step()) {
+        for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++) {
+            const PlanRow &r = rows[i];
+            const ImVec2 p = ImGui::GetCursorScreenPos();
+            ImGui::Dummy(ImVec2(rowW, rowH));
+            pdl->AddLine(ImVec2(p.x, p.y + rowH), ImVec2(p.x + rowW, p.y + rowH), Rgb(kRowLine), D(1.0f));
+            const float ty = p.y + (rowH - Measure(nullptr, 15.0f, "Ag").y) * 0.5f;
+            const float my = p.y + (rowH - Measure(g_fontMono, 14.0f, "0").y) * 0.5f;
+            PaintText(pdl, nullptr, 15.0f, ImVec2(x + D(20.0f), ty), DifficultyColor(r.drop->difficulty),
+                      r.drop->difficulty.c_str());
+            PaintText(pdl, g_fontMono, 14.0f, ImVec2(colNum, my), kMuted, r.drop->mission.c_str());
+            FittedText(pdl, g_fontSemi, 15.0f, ImVec2(colName, ty), kText, r.drop->missionName,
+                       colMissing - colName - D(90.0f));
+            char v[32];
+            snprintf(v, sizeof(v), "%d", r.missing);
+            MonoRight(pdl, colMissing, my, 14.0f, g.farmWishOnly ? kPink : kText, v);
+            snprintf(v, sizeof(v), "%d", r.pool);
+            MonoRight(pdl, colPool, my, 14.0f, kFaint, v);
+            snprintf(v, sizeof(v), "%.1f%%", r.perCrate * 100.0f);
+            MonoRight(pdl, colPer, my, 14.0f, i < 3 ? kGreen : kSoft, v);
+            snprintf(v, sizeof(v), "%.1f", r.cratesOne);
+            MonoRight(pdl, colOne, my, 14.0f, kSoft, v);
+            snprintf(v, sizeof(v), "%.0f", r.cratesAll);
+            MonoRight(pdl, right, my, 14.0f, kFaint, v);
+        }
+    }
+    clipper.End();
+    ImGui::PopStyleVar();
+    ImGui::EndChild();
+}
+
+struct MissionRow {
+    const Drop *drop;
+    int missing;
+    int pool;
+};
+
+struct MissionCache {
+    bool valid = false;
+    unsigned long long read = 0;
+    int difficulty = -1;
+    std::vector<MissionRow> rows;
+};
+
+MissionCache g_missions;
+
+const std::vector<MissionRow> &MissionRows(const Catalog &cat) {
+    const unsigned long long read = MomentoLecturaSave();
+    if (g_missions.valid && g_missions.read == read && g_missions.difficulty == g.missionDifficulty) {
+        return g_missions.rows;
+    }
+    g_missions.rows.clear();
+    for (const Drop &d : GetDrops()) {
+        if (d.difficulty != kDifficulties[g.missionDifficulty]) {
+            continue;
+        }
+        MissionRow r{&d, 0, 0};
+        for (const ClassData &c : cat.classes) {
+            for (const Weapon &w : c.weapons) {
+                if (InPool(w, d)) {
+                    r.pool++;
+                    r.missing += w.owned ? 0 : 1;
+                }
+            }
+        }
+        g_missions.rows.push_back(r);
+    }
+    g_missions.valid = true;
+    g_missions.read = read;
+    g_missions.difficulty = g.missionDifficulty;
+    return g_missions.rows;
+}
+
+void DrawMissionsBar(ImDrawList *dl, ImVec2 o, float w) {
+    ViewTitle(dl, o, w, "What each mission still has for you",
+              "Missing weapons in each mission's crate pool, across all classes.");
+    const SegmentItem items[] = {{"Normal", -1}, {"Hard", -1}, {"Hardest", -1}, {"Inferno", -1}};
+    float left = 0.0f;
+    const int clicked = SegmentGroup(dl, o.x + w - D(20.0f), o.y + D(kHeaderH) + D(17.0f), items, kDifficultyCount,
+                                     g.missionDifficulty, 40, left);
+    if (clicked >= 0) {
+        g.missionDifficulty = clicked;
+    }
+}
+
+void DrawGaps(ImDrawList *dl, ImVec2 p, float width, float height, float lo, float hi, const Catalog &cat) {
+    constexpr int kBands = 12;
+    int missing[kBands] = {0};
+    int maxv = 1;
+    for (const ClassData &c : cat.classes) {
+        for (const Weapon &w : c.weapons) {
+            if (w.owned || !w.farmable) {
+                continue;
+            }
+            const int band = std::min(w.level / 10, kBands - 1);
+            missing[band]++;
+        }
+    }
+    for (int v : missing) {
+        maxv = std::max(maxv, v);
+    }
+    const float bandW = width / kBands;
+    for (int i = 0; i < kBands; i++) {
+        const bool inside = (float)(i * 10 + 9) >= lo && (float)(i * 10) <= hi;
+        const float h = height * missing[i] / maxv;
+        const ImVec2 a(p.x + i * bandW + D(3.0f), p.y + height - h);
+        const ImVec2 b(p.x + (i + 1) * bandW - D(3.0f), p.y + height);
+        dl->AddRectFilled(a, b, Rgb(inside ? kGreen : kKeyLine, inside ? 0.85f : 1.0f));
+        char n[8];
+        if (missing[i] > 0) {
+            snprintf(n, sizeof(n), "%d", missing[i]);
+            const ImVec2 ns = Measure(g_fontMono, 12.0f, n);
+            PaintText(dl, g_fontMono, 12.0f, ImVec2(a.x + (b.x - a.x - ns.x) * 0.5f, a.y - ns.y - D(2.0f)),
+                      inside ? kText : kMuted, n);
+        }
+        snprintf(n, sizeof(n), "%d", i * 10);
+        const ImVec2 ls = Measure(g_fontMono, 11.0f, n);
+        PaintText(dl, g_fontMono, 11.0f, ImVec2(a.x + (b.x - a.x - ls.x) * 0.5f, p.y + height + D(4.0f)), kFaint, n);
+    }
+}
+
+void MoveInList(const std::vector<std::string> &keys, std::string &current) {
+    if (keys.empty() || ImGui::GetIO().WantTextInput) {
+        return;
+    }
+    const int step = ImGui::IsKeyPressed(ImGuiKey_UpArrow) ? -1 : (ImGui::IsKeyPressed(ImGuiKey_DownArrow) ? 1 : 0);
+    if (!step) {
+        return;
+    }
+    int pos = 0;
+    while (pos < (int)keys.size() && keys[pos] != current) {
+        pos++;
+    }
+    pos = pos >= (int)keys.size() ? 0 : std::min(std::max(pos + step, 0), (int)keys.size() - 1);
+    current = keys[pos];
+}
+
+void DrawMissions(ImDrawList *dl, ImVec2 o, float w, float bodyTop, float bodyBottom, Catalog &cat) {
+    const std::vector<MissionRow> &rows = MissionRows(cat);
+    if (rows.empty()) {
+        CenteredMessage(dl, o.x, w, bodyTop, bodyBottom, "missions.tsv not loaded",
+                        "Expected at Mods\\Compendium\\missions.tsv");
+        return;
+    }
+    std::vector<std::string> keys;
+    const MissionRow *selected = nullptr;
+    for (const MissionRow &r : rows) {
+        keys.push_back(r.drop->mission);
+    }
+    MoveInList(keys, g.mission);
+    for (const MissionRow &r : rows) {
+        if (r.drop->mission == g.mission) {
+            selected = &r;
+        }
+    }
+    if (!selected) {
+        selected = &rows[0];
+        g.mission = selected->drop->mission;
+    }
+
+    const float listW = D(460.0f);
+    dl->AddLine(ImVec2(o.x + listW, bodyTop), ImVec2(o.x + listW, bodyBottom), Rgb(kLine), D(1.0f));
+    ImGui::SetCursorScreenPos(ImVec2(o.x, bodyTop));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::BeginChild("missions", ImVec2(listW - D(1.0f), bodyBottom - bodyTop), ImGuiChildFlags_None,
+                      ImGuiWindowFlags_NoBackground);
+    ImGui::PopStyleVar();
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
+    ImDrawList *ldl = ImGui::GetWindowDrawList();
+    const float rowW = ImGui::GetContentRegionAvail().x;
+    const float rowH = D(44.0f);
+    for (const MissionRow &r : rows) {
+        const ImVec2 p = ImGui::GetCursorScreenPos();
+        ImGui::PushID(r.drop);
+        if (ImGui::InvisibleButton("mission", ImVec2(rowW, rowH))) {
+            g.mission = r.drop->mission;
+        }
+        const bool hovered = ImGui::IsItemHovered();
+        ImGui::PopID();
+        const bool isSelected = &r == selected;
+        if (isSelected || hovered) {
+            ldl->AddRectFilled(p, ImVec2(p.x + rowW, p.y + rowH), Rgb(kSelected, isSelected ? 1.0f : 0.5f));
+        }
+        const float ty = p.y + (rowH - Measure(g_fontSemi, 15.0f, "Ag").y) * 0.5f;
+        const float my = p.y + (rowH - Measure(g_fontMono, 13.0f, "0").y) * 0.5f;
+        PaintText(ldl, g_fontMono, 13.0f, ImVec2(p.x + D(20.0f), my), kMuted, r.drop->mission.c_str());
+        char count[24];
+        snprintf(count, sizeof(count), "%d/%d", r.missing, r.pool);
+        const ImVec2 cs = Measure(g_fontMono, 13.0f, count);
+        FittedText(ldl, g_fontSemi, 15.0f, ImVec2(p.x + D(64.0f), ty), kText, r.drop->missionName,
+                   rowW - D(64.0f) - cs.x - D(40.0f));
+        PaintText(ldl, g_fontMono, 13.0f, ImVec2(p.x + rowW - D(20.0f) - cs.x, my), r.missing ? kGreen : kFaint, count);
+    }
+    ImGui::PopStyleVar();
+    ImGui::EndChild();
+
+    const Drop &d = *selected->drop;
+    const float x = o.x + listW + D(24.0f);
+    const float right = o.x + w - D(24.0f);
+    char title[160];
+    snprintf(title, sizeof(title), "%s \xC2\xB7 %s", d.mission.c_str(), d.missionName.c_str());
+    FittedText(dl, g_fontBold, 22.0f, ImVec2(x, bodyTop + D(18.0f)), kText, title, right - x);
+    char sub[160];
+    snprintf(sub, sizeof(sub), "%s \xC2\xB7 levels %.0f-%.0f \xC2\xB7 %d of %d missing \xC2\xB7 %.2f%% per crate",
+             d.difficulty.c_str(), d.lo, d.hi, selected->missing, selected->pool, d.chance * 100.0f);
+    PaintText(dl, nullptr, 14.0f, ImVec2(x, bodyTop + D(50.0f)), kMuted, sub);
+
+    SpacedText(dl, g_fontLabel, 11.0f, ImVec2(x, bodyTop + D(86.0f)), kFaint, "YOUR GAPS BY LEVEL", 1.5f);
+    PaintText(dl, nullptr, 12.0f, ImVec2(x + D(170.0f), bodyTop + D(84.0f)), kFaint, "(green: this mission's range)");
+    DrawGaps(dl, ImVec2(x, bodyTop + D(122.0f)), right - x, D(80.0f), d.lo, d.hi, cat);
+
+    const float headerY = bodyTop + D(236.0f);
+    HeaderLabel(dl, x + D(28.0f), headerY, "MISSING HERE");
+    HeaderLabelRight(dl, right - D(150.0f), headerY, "LV");
+    HeaderLabel(dl, right - D(130.0f), headerY, "CLASS");
+    const float listTop = headerY + D(24.0f);
+    dl->AddLine(ImVec2(o.x + listW, listTop), ImVec2(o.x + w, listTop), Rgb(kLine), D(1.0f));
+
+    struct Missing {
+        Weapon *weapon;
+        const char *cls;
+    };
+    std::vector<Missing> missing;
+    for (ClassData &c : cat.classes) {
+        for (Weapon &weapon : c.weapons) {
+            if (!weapon.owned && InPool(weapon, d)) {
+                missing.push_back(Missing{&weapon, c.name.c_str()});
+            }
+        }
+    }
+    if (missing.empty()) {
+        CenteredMessage(dl, o.x + listW, w - listW, listTop, bodyBottom, "Nothing missing here",
+                        "Every weapon in this mission's pool is already yours.");
+        return;
+    }
+    ImGui::SetCursorScreenPos(ImVec2(o.x + listW, listTop + D(1.0f)));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::BeginChild("missingHere", ImVec2(w - listW, bodyBottom - listTop - D(1.0f)), ImGuiChildFlags_None,
+                      ImGuiWindowFlags_NoBackground);
+    ImGui::PopStyleVar();
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
+    ImDrawList *mdl = ImGui::GetWindowDrawList();
+    const float mRowW = ImGui::GetContentRegionAvail().x;
+    const float mRowH = D(36.0f);
+    ImGuiListClipper clipper;
+    clipper.Begin((int)missing.size(), mRowH);
+    while (clipper.Step()) {
+        for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++) {
+            Weapon &weapon = *missing[i].weapon;
+            const ImVec2 p = ImGui::GetCursorScreenPos();
+            ImGui::PushID(i);
+            if (ImGui::InvisibleButton("wish", ImVec2(mRowW, mRowH))) {
+                ToggleWish(weapon);
+            }
+            const bool hovered = ImGui::IsItemHovered();
+            ImGui::PopID();
+            if (hovered) {
+                mdl->AddRectFilled(p, ImVec2(p.x + mRowW, p.y + mRowH), Rgb(kSelected, 0.5f));
+            }
+            Heart(mdl, ImVec2(x + D(8.0f), p.y + mRowH * 0.5f), D(14.0f), weapon.wish ? kPink : (hovered ? kMuted : kKeyLine));
+            const float ty = p.y + (mRowH - Measure(g_fontSemi, 15.0f, "Ag").y) * 0.5f;
+            FittedText(mdl, g_fontSemi, 15.0f, ImVec2(x + D(28.0f), ty), kText, weapon.name,
+                       right - D(150.0f) - x - D(28.0f) - D(50.0f));
+            char lv[8];
+            snprintf(lv, sizeof(lv), "%d", weapon.level);
+            MonoRight(mdl, right - D(150.0f), p.y + (mRowH - Measure(g_fontMono, 14.0f, "0").y) * 0.5f, 14.0f, kSoft, lv);
+            PaintText(mdl, nullptr, 14.0f, ImVec2(right - D(130.0f), ty), kMuted, missing[i].cls);
+            if (hovered && !weapon.stats.empty() && ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
+                ImGui::SetTooltip("%s\n\nClick to %s the wishlist.", StatsLines(weapon).c_str(),
+                                  weapon.wish ? "remove it from" : "add it to");
+            }
+        }
+    }
+    clipper.End();
+    ImGui::PopStyleVar();
+    ImGui::EndChild();
+}
+
+void DrawStratsBar(ImDrawList *dl, ImVec2 o, float w) {
+    ViewTitle(dl, o, w, "Community strategies",
+              "Mission numbers are checked against the game data; the yields each guide claims are not.");
+}
+
+void DrawStrats(ImDrawList *dl, ImVec2 o, float w, float bodyTop, float bodyBottom, const Catalog &cat) {
+    const std::vector<Strat> &strats = GetStrats();
+    if (strats.empty()) {
+        CenteredMessage(dl, o.x, w, bodyTop, bodyBottom, "strats.tsv not loaded",
+                        "Expected at Mods\\Compendium\\strats.tsv");
+        return;
+    }
+    if (!ImGui::GetIO().WantTextInput) {
+        if (ImGui::IsKeyPressed(ImGuiKey_UpArrow)) {
+            g.strat = std::max(0, g.strat - 1);
+        } else if (ImGui::IsKeyPressed(ImGuiKey_DownArrow)) {
+            g.strat = std::min((int)strats.size() - 1, g.strat + 1);
+        }
+    }
+    if (g.strat >= (int)strats.size()) {
+        g.strat = 0;
+    }
+
+    const float listW = D(460.0f);
+    dl->AddLine(ImVec2(o.x + listW, bodyTop), ImVec2(o.x + listW, bodyBottom), Rgb(kLine), D(1.0f));
+    ImGui::SetCursorScreenPos(ImVec2(o.x, bodyTop));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::BeginChild("strats", ImVec2(listW - D(1.0f), bodyBottom - bodyTop), ImGuiChildFlags_None,
+                      ImGuiWindowFlags_NoBackground);
+    ImGui::PopStyleVar();
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
+    ImDrawList *ldl = ImGui::GetWindowDrawList();
+    const float rowW = ImGui::GetContentRegionAvail().x;
+    const float rowH = D(60.0f);
+    for (int i = 0; i < (int)strats.size(); i++) {
+        const Strat &s = strats[i];
+        const ImVec2 p = ImGui::GetCursorScreenPos();
+        ImGui::PushID(i);
+        if (ImGui::InvisibleButton("strat", ImVec2(rowW, rowH))) {
+            g.strat = i;
+        }
+        const bool hovered = ImGui::IsItemHovered();
+        ImGui::PopID();
+        if (i == g.strat || hovered) {
+            ldl->AddRectFilled(p, ImVec2(p.x + rowW, p.y + rowH), Rgb(kSelected, i == g.strat ? 1.0f : 0.5f));
+        }
+        FittedText(ldl, g_fontSemi, 15.0f, ImVec2(p.x + D(20.0f), p.y + D(10.0f)), kText, s.title, rowW - D(40.0f));
+        char meta[128];
+        if (s.mission == "any") {
+            snprintf(meta, sizeof(meta), "General");
+        } else {
+            snprintf(meta, sizeof(meta), "Mission %s \xC2\xB7 %s \xC2\xB7 %s", s.mission.c_str(), s.difficulty.c_str(),
+                     s.className.c_str());
+        }
+        PaintText(ldl, nullptr, 12.0f, ImVec2(p.x + D(20.0f), p.y + D(34.0f)), kMuted, meta);
+    }
+    ImGui::PopStyleVar();
+    ImGui::EndChild();
+
+    const Strat &s = strats[g.strat];
+    ImGui::SetCursorScreenPos(ImVec2(o.x + listW, bodyTop));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::BeginChild("strat", ImVec2(w - listW, bodyBottom - bodyTop), ImGuiChildFlags_None,
+                      ImGuiWindowFlags_NoBackground);
+    ImGui::PopStyleVar();
+    ImDrawList *sdl = ImGui::GetWindowDrawList();
+    const ImVec2 start = ImGui::GetCursorScreenPos();
+    const float innerW = ImGui::GetContentRegionAvail().x;
+    const float x = start.x + D(28.0f);
+    const float wrap = innerW - D(56.0f);
+    float y = start.y + D(22.0f);
+    y += WrappedText(sdl, g_fontBold, 22.0f, ImVec2(x, y), kText, s.title.c_str(), wrap) + D(6.0f);
+    if (s.mission != "any") {
+        char meta[128];
+        snprintf(meta, sizeof(meta), "Mission %s \xC2\xB7 %s \xC2\xB7 %s", s.mission.c_str(), s.difficulty.c_str(),
+                 s.className.c_str());
+        y += WrappedText(sdl, nullptr, 14.0f, ImVec2(x, y), kMuted, meta, wrap) + D(12.0f);
+    }
+    sdl->AddLine(ImVec2(start.x, y), ImVec2(start.x + innerW, y), Rgb(kLine), D(1.0f));
+    y += D(16.0f);
+    y += WrappedText(sdl, nullptr, 15.0f, ImVec2(x, y), kSoft, s.body.c_str(), wrap) + D(20.0f);
+
+    if (s.mission != "any" && !s.mission.empty()) {
+        bool header = false;
+        for (const Drop &d : GetDrops()) {
+            if (d.mission != s.mission) {
+                continue;
+            }
+            int pool = 0;
+            int missing = 0;
+            for (const ClassData &c : cat.classes) {
+                for (const Weapon &weapon : c.weapons) {
+                    if (InPool(weapon, d)) {
+                        pool++;
+                        missing += weapon.owned ? 0 : 1;
+                    }
+                }
+            }
+            if (!pool) {
+                continue;
+            }
+            if (!header) {
+                char label[64];
+                snprintf(label, sizeof(label), "YOUR PROGRESS ON MISSION %s", s.mission.c_str());
+                SpacedText(sdl, g_fontLabel, 11.0f, ImVec2(x, y), kFaint, label, 1.5f);
+                y += D(24.0f);
+                header = true;
+            }
+            PaintText(sdl, nullptr, 14.0f, ImVec2(x, y), DifficultyColor(d.difficulty), d.difficulty.c_str());
+            char line[96];
+            snprintf(line, sizeof(line), "%d of %d missing \xC2\xB7 %.0f%% new per crate", missing, pool,
+                     100.0f * missing / pool);
+            PaintText(sdl, nullptr, 14.0f, ImVec2(x + D(90.0f), y), missing ? kSoft : kFaint, line);
+            y += D(24.0f);
+        }
+        if (header) {
+            y += D(14.0f);
+        }
+    }
+    if (!s.source.empty()) {
+        const std::string source = "Source: " + s.source;
+        y += WrappedText(sdl, nullptr, 13.0f, ImVec2(x, y), kFaint, source.c_str(), wrap);
+    }
+    ImGui::Dummy(ImVec2(innerW, y - start.y + D(20.0f)));
+    ImGui::EndChild();
+}
+
 void MoveSelection(const std::vector<Row> &rows, int step) {
     std::vector<int> items;
     for (const Row &r : rows) {
@@ -876,10 +1680,10 @@ void HandleGlobalKeys(Catalog &cat) {
         return;
     }
     if (ImGui::IsKeyPressed(ImGuiKey_Q, false)) {
-        SwitchClass(g.viewedClass - 1, classCount);
+        SwitchTab(CurrentTab(classCount) - 1, classCount);
     } else if (ImGui::IsKeyPressed(ImGuiKey_E, false)) {
-        SwitchClass(g.viewedClass + 1, classCount);
-    } else if (ImGui::IsKeyPressed(ImGuiKey_Slash, false)) {
+        SwitchTab(CurrentTab(classCount) + 1, classCount);
+    } else if (ImGui::IsKeyPressed(ImGuiKey_Slash, false) && g.view == View::Class) {
         g.focusSearch = true;
     }
 }
@@ -951,6 +1755,29 @@ void DrawCompendiumPanel(bool &open, float scale) {
         return;
     }
     HandleGlobalKeys(cat);
+    const float bodyTop = o.y + D(kHeaderH) + D(kStatsH) + D(1.0f);
+    const float bodyBottom = o.y + size.y;
+    if (g.view != View::Class) {
+        DrawHeader(dl, o, size.x, cat, open);
+        switch (g.view) {
+        case View::Farming:
+            DrawFarmingBar(dl, o, size.x, cat);
+            DrawFarming(dl, o, size.x, bodyTop, bodyBottom, cat);
+            break;
+        case View::Missions:
+            DrawMissionsBar(dl, o, size.x);
+            DrawMissions(dl, o, size.x, bodyTop, bodyBottom, cat);
+            break;
+        case View::Strats:
+            DrawStratsBar(dl, o, size.x);
+            DrawStrats(dl, o, size.x, bodyTop, bodyBottom, cat);
+            break;
+        case View::Class:
+            break;
+        }
+        ImGui::End();
+        return;
+    }
     if (g.viewedClass >= (int)cat.classes.size()) {
         g.viewedClass = 0;
     }
@@ -977,8 +1804,6 @@ void DrawCompendiumPanel(bool &open, float scale) {
     const Counts classCounts = CountOf(cls.weapons, -1);
     DrawHeader(dl, o, size.x, cat, open);
     DrawStats(dl, o, size.x, classCounts);
-    const float bodyTop = o.y + D(kHeaderH) + D(kStatsH) + D(1.0f);
-    const float bodyBottom = o.y + size.y;
     const float listX = o.x + D(kSidebarW);
     const float detailX = o.x + size.x - D(kDetailW);
     dl->AddLine(ImVec2(listX, bodyTop), ImVec2(listX, bodyBottom), Rgb(kLine), D(1.0f));
