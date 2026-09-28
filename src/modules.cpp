@@ -57,9 +57,53 @@ void HostTextSize(float size, const char *utf8, float *width, float *height) {
     *height = s.y;
 }
 
+ImFont *FontById(int font) {
+    switch (font) {
+    case EDF6_FONT_SEMIBOLD:
+        return ui::FontOr(ui::g_fontSemi);
+    case EDF6_FONT_BOLD:
+        return ui::FontOr(ui::g_fontBold);
+    case EDF6_FONT_LABEL:
+        return ui::FontOr(ui::g_fontLabel);
+    case EDF6_FONT_MONO:
+        return ui::FontOr(ui::g_fontMono);
+    default:
+        return ui::FontOr(nullptr);
+    }
+}
+
+int Utf8Length(unsigned char c) {
+    return c < 0x80 ? 1 : (c >> 5) == 0x6 ? 2 : (c >> 4) == 0xE ? 3 : 4;
+}
+
+void HostTextEx(float x, float y, float size, uint32_t rgba, int font, float spacing, const char *utf8) {
+    ImFont *f = FontById(font);
+    ImDrawList *dl = ImGui::GetBackgroundDrawList();
+    if (spacing == 0.0f) {
+        dl->AddText(f, size, ImVec2(x, y), FromRgba(rgba), utf8);
+        return;
+    }
+    for (const char *c = utf8; *c;) {
+        const int n = Utf8Length((unsigned char)*c);
+        dl->AddText(f, size, ImVec2(x, y), FromRgba(rgba), c, c + n);
+        x += f->CalcTextSizeA(size, FLT_MAX, 0.0f, c, c + n).x + spacing;
+        c += n;
+    }
+}
+
+void HostTextExSize(float size, int font, float spacing, const char *utf8, float *width, float *height) {
+    const ImVec2 s = FontById(font)->CalcTextSizeA(size, FLT_MAX, 0.0f, utf8);
+    int glyphs = 0;
+    for (const char *c = utf8; *c; c += Utf8Length((unsigned char)*c)) {
+        glyphs++;
+    }
+    *width = s.x + (glyphs > 1 ? spacing * (glyphs - 1) : 0.0f);
+    *height = s.y;
+}
+
 const Edf6OverlayHost g_host = {
-    EDF6_OVERLAY_API_VERSION, &HostLog,  &HostScale, &HostScreenSize, &HostFillRect,
-    &HostStrokeRect,          &HostText, &HostTextSize,
+    EDF6_OVERLAY_API_VERSION, &HostLog,     &HostScale,     &HostScreenSize, &HostFillRect,
+    &HostStrokeRect,          &HostText,    &HostTextSize,  &HostTextEx,     &HostTextExSize,
 };
 
 }
@@ -98,8 +142,8 @@ extern "C" __declspec(dllexport) int Edf6Overlay_Register(const Edf6OverlayModul
     if (!module || !host) {
         return 0;
     }
-    if (module->version != EDF6_OVERLAY_API_VERSION) {
-        LogF("modulos: %s pide la API %d y el Compendium tiene la %d; no lo registro",
+    if (module->version < 1 || module->version > EDF6_OVERLAY_API_VERSION) {
+        LogF("modulos: %s pide la API %d y el Compendium llega hasta la %d; no lo registro",
              module->name ? module->name : "?", module->version, EDF6_OVERLAY_API_VERSION);
         return 0;
     }
@@ -112,6 +156,7 @@ extern "C" __declspec(dllexport) int Edf6Overlay_Register(const Edf6OverlayModul
     g_modules[count] = module;
     g_count.store(count + 1, std::memory_order_release);
     *host = &g_host;
-    LogF("modulos: registrado %s, tecla 0x%02X", module->name ? module->name : "?", module->toggleKey);
+    LogF("modulos: registrado %s (API %d), tecla 0x%02X", module->name ? module->name : "?", module->version,
+         module->toggleKey);
     return 1;
 }

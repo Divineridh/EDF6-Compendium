@@ -96,13 +96,18 @@ ventana del juego, comprobado en dos máquinas distintas.
 ## Módulos
 
 Otras DLLs pueden colgarse del overlay sin engancharse ellas mismas a Present ni al input, que es
-lo que costó estabilizar. El contrato está en `src/edf6_overlay_api.h` (versión 1, C puro):
+lo que costó estabilizar. El contrato está en `src/edf6_overlay_api.h` (versión 2, C puro):
 
 - la DLL del módulo busca `EDF6Compendium.dll` y llama a su export `Edf6Overlay_Register` con un
   `Edf6OverlayModule` (nombre, tecla, `onToggle`, `wantsDraw`, `draw`);
 - el Compendium detecta la tecla por los mismos tres caminos que F1 y llama a `onToggle`;
 - en cada frame, si `wantsDraw` da distinto de cero, llama a `draw` con un `Edf6OverlayHost`:
-  rectángulos, texto con las fuentes del panel, tamaño de pantalla, escala y el log.
+  rectángulos, texto, tamaño de pantalla, escala y el log. Desde la versión 2, el texto puede
+  elegir entre las fuentes de los paneles (normal, semibold, bold, etiqueta y monoespaciada) y
+  llevar espaciado entre letras.
+
+La estructura del anfitrión solo crece al final, así que el Compendium acepta módulos de cualquier
+versión hasta la suya; un módulo que pide la versión N necesita un Compendium con la N o más nueva.
 
 El módulo no usa imgui: compartir imgui entre DLLs obliga a la misma versión exacta y a compartir
 contexto y allocator. Lo que dibuja va al fondo, debajo de los paneles. Entran hasta 8 módulos.
