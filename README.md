@@ -89,6 +89,22 @@ primero y sirve para comprobar que los de respaldo andan.
 **El filtro de foco no funciona con EDF6** y viene apagado: `GetForegroundWindow()` nunca devuelve la
 ventana del juego, comprobado en dos máquinas distintas.
 
+## Módulos
+
+Otras DLLs pueden colgarse del overlay sin engancharse ellas mismas a Present ni al input, que es
+lo que costó estabilizar. El contrato está en `src/edf6_overlay_api.h` (versión 1, C puro):
+
+- la DLL del módulo busca `EDF6Compendium.dll` y llama a su export `Edf6Overlay_Register` con un
+  `Edf6OverlayModule` (nombre, tecla, `onToggle`, `wantsDraw`, `draw`);
+- el Compendium detecta la tecla por los mismos tres caminos que F1 y llama a `onToggle`;
+- en cada frame, si `wantsDraw` da distinto de cero, llama a `draw` con un `Edf6OverlayHost`:
+  rectángulos, texto con las fuentes del panel, tamaño de pantalla, escala y el log.
+
+El módulo no usa imgui: compartir imgui entre DLLs obliga a la misma versión exacta y a compartir
+contexto y allocator. Lo que dibuja va al fondo, debajo de los paneles. Entran hasta 8 módulos.
+
+El primero es [EDF6-EnemyHp](../EDF6-EnemyHp), el contador de vida del último enemigo golpeado.
+
 ## Diagnóstico
 
 El plugin escribe `Compendium.log` al lado del `EDF6.exe`. La primera línea trae la fecha del build,

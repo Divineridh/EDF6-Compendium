@@ -19,6 +19,7 @@
 #include "compendium.h"
 #include "compendium_ui.h"
 #include "loadouts.h"
+#include "modules.h"
 #include "ui_kit.h"
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND, UINT, WPARAM, LPARAM);
@@ -40,6 +41,7 @@ static std::atomic<bool> g_loadoutsVisible{false};
 static std::atomic<unsigned long long> g_frames{0};
 static std::atomic<bool> g_toggleSolicitado{false};
 static std::atomic<bool> g_toggleLoadoutsSolicitado{false};
+static std::atomic<bool> g_toggleModuloSolicitado[kMaxModules];
 
 static bool AlgunPanelVisible() {
     return g_visible || g_loadoutsVisible;
@@ -168,6 +170,7 @@ static POINT g_cursorCongelado = {0, 0};
 // No hace falta ninguna API nueva ni un hook global.
 static std::atomic<bool> g_teclaEspiada{false};
 static std::atomic<bool> g_teclaLoadoutsEspiada{false};
+static std::atomic<bool> g_teclaModuloEspiada[kMaxModules];
 static std::atomic<bool> g_juegoLeeTeclado{false};
 
 static bool Bloqueando() {
@@ -182,6 +185,11 @@ static SHORT WINAPI hkGetKeyState(int vk) {
     }
     if (vk == TeclaLoadouts()) {
         g_teclaLoadoutsEspiada = (r & 0x8000) != 0;
+    }
+    for (int i = 0; i < ModuleCount(); i++) {
+        if (vk == ModuleAt(i)->toggleKey) {
+            g_teclaModuloEspiada[i] = (r & 0x8000) != 0;
+        }
     }
     if (Bloqueando()) {
         return 0;
@@ -200,6 +208,12 @@ static BOOL WINAPI hkGetKeyboardState(PBYTE estado) {
         const int vkLoadouts = TeclaLoadouts();
         if (vkLoadouts > 0 && vkLoadouts < 256) {
             g_teclaLoadoutsEspiada = (estado[vkLoadouts] & 0x80) != 0;
+        }
+        for (int i = 0; i < ModuleCount(); i++) {
+            const int vkModulo = ModuleAt(i)->toggleKey;
+            if (vkModulo > 0 && vkModulo < 256) {
+                g_teclaModuloEspiada[i] = (estado[vkModulo] & 0x80) != 0;
+            }
         }
         if (Bloqueando()) {
             memset(estado, 0, 256);
@@ -256,6 +270,14 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     if (msg == WM_KEYDOWN && wp == (WPARAM)TeclaLoadouts()) {
         g_toggleLoadoutsSolicitado = true;
         return 0;
+    }
+    if (msg == WM_KEYDOWN) {
+        for (int i = 0; i < ModuleCount(); i++) {
+            if (wp == (WPARAM)ModuleAt(i)->toggleKey) {
+                g_toggleModuloSolicitado[i] = true;
+                return 0;
+            }
+        }
     }
     if (AlgunPanelVisible() && g_imguiReady) {
         ImGui_ImplWin32_WndProcHandler(hwnd, msg, wp, lp);
@@ -514,17 +536,26 @@ static void RevisarToggle() {
     static bool avisadoFoco = false;
     static unsigned long long ultimoToggle = 0;
     static unsigned long long ultimoToggleLoadouts = 0;
+    static bool anteriorModulo[kMaxModules] = {};
+    static unsigned long long ultimoToggleModulo[kMaxModules] = {};
 
     // Un WM_KEYDOWN solo llega si la ventana tiene el foco de teclado de verdad,
     // asi que ese camino no pasa por el filtro. En las maquinas donde
     // GetForegroundWindow miente, es el unico que queda.
     const bool porMensaje = g_toggleSolicitado.exchange(false);
     const bool porMensajeLoadouts = g_toggleLoadoutsSolicitado.exchange(false);
+    const int modulos = ModuleCount();
+    bool porMensajeModulo[kMaxModules] = {};
+    bool algunModuloPorMensaje = false;
+    for (int i = 0; i < modulos; i++) {
+        porMensajeModulo[i] = g_toggleModuloSolicitado[i].exchange(false);
+        algunModuloPorMensaje = algunModuloPorMensaje || porMensajeModulo[i];
+    }
     const bool enFoco = JuegoEnFoco();
     EscanearTeclado();
     Latido(enFoco);
 
-    if (!porMensaje && !porMensajeLoadouts && !enFoco) {
+    if (!porMensaje && !porMensajeLoadouts && !algunModuloPorMensaje && !enFoco) {
         // Se avisa una sola vez: si el overlay no abre, este renglon separa
         // "no detecto el foco" de "no me llega la tecla".
         if (!avisadoFoco) {
@@ -538,6 +569,9 @@ static void RevisarToggle() {
         }
         anterior = false;
         anteriorLoadouts = false;
+        for (bool &a : anteriorModulo) {
+            a = false;
+        }
         return;
     }
     if (!avisado) {
@@ -569,6 +603,24 @@ static void RevisarToggle() {
             LogF("loadouts: tecla por %s, panel -> %s", camino, g_loadoutsVisible ? "abierto" : "cerrado");
         }
     }
+
+    for (int i = 0; i < modulos; i++) {
+        const Edf6OverlayModule *m = ModuleAt(i);
+        if (m->toggleKey <= 0 || !m->onToggle) {
+            continue;
+        }
+        if (const char *camino =
+                PulsacionNueva(m->toggleKey, g_teclaModuloEspiada[i], porMensajeModulo[i], anteriorModulo[i])) {
+            g_algunaTecla = true;
+            const unsigned long long delta = MsDesde(ultimoToggleModulo[i]);
+            if (delta < 250) {
+                LogF("modulos: tecla de %s por %s descartada, hubo otra hace %llu ms", m->name, camino, delta);
+            } else {
+                m->onToggle();
+                LogF("modulos: tecla de %s por %s", m->name, camino);
+            }
+        }
+    }
 }
 
 static void FrameOverlay(IDXGISwapChain *swap) {
@@ -578,6 +630,7 @@ static void FrameOverlay(IDXGISwapChain *swap) {
     AsegurarRenderTarget(swap);
     RevisarSave();
     const bool toast = ToastActivo();
+    const bool modulos = AnyModuleWantsDraw();
     if (AlgunPanelVisible() && (!g_imguiReady || !g_rtv)) {
         static bool avisadoSinDibujo = false;
         if (!avisadoSinDibujo) {
@@ -586,7 +639,7 @@ static void FrameOverlay(IDXGISwapChain *swap) {
             avisadoSinDibujo = true;
         }
     }
-    if (g_imguiReady && (AlgunPanelVisible() || toast) && g_rtv) {
+    if (g_imguiReady && (AlgunPanelVisible() || toast || modulos) && g_rtv) {
         static bool avisadoDibujo = false;
         if (!avisadoDibujo) {
             Log("3. primer frame del overlay dibujado");
@@ -613,6 +666,9 @@ static void FrameOverlay(IDXGISwapChain *swap) {
         }
         if (toast) {
             DrawToast();
+        }
+        if (modulos) {
+            DrawModules(g_escala);
         }
         ImGui::Render();
         g_context->OMSetRenderTargets(1, &g_rtv, nullptr);
