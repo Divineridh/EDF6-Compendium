@@ -47,11 +47,15 @@ std::vector<std::string> Split(const std::string &s, char separator) {
 }
 
 // A stat capped below star 5 still shows star 5 when maxed (Slugger NN1's ROF, level 3 of 3, is
-// shown as star 5), so its levels are shifted up to end at 5.
+// shown as star 5), so its levels are shifted up to end at 5. Checked against G&M-A25: ROF level
+// 0 of 4 shows 10.0/sec, which is star 1; scaling proportionally would give star 0 and 7.5/sec.
 int StarOf(const StarValue &v, int level) {
     return level + (v.maxLevel < kNeutralStar ? (int)kNeutralStar - v.maxLevel : 0);
 }
 
+// value = base * (1 +/- a * ((star / 5)^b - 1)), minus for stats that improve by going down,
+// rounded when the stat is whole. Fitted to in-game values of five weapons at many star levels;
+// every one matched to the shown decimal.
 float ValueAt(const StarValue &v, int star) {
     const float shift = v.a * (std::pow(star / kNeutralStar, v.b) - 1.0f);
     float value = v.base * (LowerIsBetter(v.type) ? 1.0f - shift : 1.0f + shift);
