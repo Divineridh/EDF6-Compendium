@@ -29,6 +29,19 @@ ORDEN = ["Ranger", "Wing Diver", "Fencer", "Air Raider"]
 # clase. Contarlas inflaba los totales y el pool de toda mision de nivel 0.
 NO_SON_ARMAS = {"Not Equipped", "No Equipment"}
 
+# Los nombres de categoria salen de las claves internas de CONFIG.SGO, que traen
+# los typos de Sandlot (Weapon_Heavy_Sheild, Weapon_MissleLauncher...).
+TYPOS_CATEGORIA = {
+    "Missle": "Missile",
+    "Sheild": "Shield",
+    "Horming": "Homing",
+    "Actuater": "Actuator",
+}
+
+
+def corregir_categoria(nombre):
+    return " ".join(TYPOS_CATEGORIA.get(p, p) for p in nombre.split(" "))
+
 
 # Las cajas de una mision no sortean sobre todo el catalogo: las del juego base
 # solo sueltan armas base, las de DLC1 suman el MissionPack A y las de DLC2 suman
@@ -62,7 +75,7 @@ def main():
         armas = [w for w in catalogo
                  if w["class"] == clase and w["name"] not in NO_SON_ARMAS]
         for w in sorted(armas, key=lambda x: (x["category"], x["level"])):
-            cat = cats.get(str(w["category"]), {}).get("name", "cat %d" % w["category"])
+            cat = corregir_categoria(cats.get(str(w["category"]), {}).get("name", "cat %d" % w["category"]))
             stats = " | ".join("%s: %s" % (s["label"], s["text"]) for s in w["stats"])
             filas.append("\t".join([
                 str(w["index"]), clase, str(w["category"]), cat,
