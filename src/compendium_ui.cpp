@@ -13,6 +13,7 @@
 #include "compendium.h"
 #include "compendium_ui.h"
 #include "ui_kit.h"
+#include "weapon_stats.h"
 
 using namespace ui;
 
@@ -253,18 +254,46 @@ void SwitchTab(int tab, int classCount) {
     g.scrollToSelected = true;
 }
 
-std::string StatsLines(const Weapon &w) {
-    std::string out = w.name + "\n";
-    size_t start = 0;
-    while (start < w.stats.size()) {
-        size_t end = w.stats.find(" | ", start);
-        if (end == std::string::npos) {
-            end = w.stats.size();
-        }
-        out += "\n" + w.stats.substr(start, end - start);
-        start = end + 3;
+ImVec4 ToneColor(Tone tone) {
+    switch (tone) {
+    case Tone::Title:
+        return ImGui::ColorConvertU32ToFloat4(Rgb(kText));
+    case Tone::Muted:
+        return ImGui::ColorConvertU32ToFloat4(Rgb(kMuted));
+    case Tone::Max:
+        return ImGui::ColorConvertU32ToFloat4(Rgb(kMaxed));
+    default:
+        return ImGui::ColorConvertU32ToFloat4(Rgb(kSoft));
     }
-    return out;
+}
+
+// Ctrl is read straight from the keyboard: the game doesn't always pass key messages on, so
+// imgui's own KeyCtrl stays false.
+void ShowStatsTooltip(const Weapon &w, const char *footer = nullptr) {
+    StatView view = StatView::BaseMax;
+    if (w.owned) {
+        view = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0 ? StatView::BaseNowMax : StatView::NowMax;
+    }
+    ImGui::BeginTooltip();
+    for (const TooltipLine &line : StatsTooltip(w, view)) {
+        if (line.empty()) {
+            ImGui::TextUnformatted("");
+            continue;
+        }
+        for (size_t i = 0; i < line.size(); i++) {
+            if (i > 0) {
+                ImGui::SameLine(0.0f, 0.0f);
+            }
+            ImGui::PushStyleColor(ImGuiCol_Text, ToneColor(line[i].tone));
+            ImGui::TextUnformatted(line[i].text.c_str());
+            ImGui::PopStyleColor();
+        }
+    }
+    if (footer) {
+        ImGui::TextUnformatted("");
+        ImGui::TextUnformatted(footer);
+    }
+    ImGui::EndTooltip();
 }
 
 std::string SaveAge() {
@@ -712,7 +741,7 @@ void DrawList(ImDrawList *dl, float x, float w, float bodyTop, float bodyBottom,
                 Heart(ldl, ImVec2(col.heart, p.y + rowH * 0.5f), D(16.0f),
                       weapon.wish ? kPink : (hovered && onHeart ? kMuted : kKeyLine));
                 if (!onHeart && !weapon.stats.empty() && ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
-                    ImGui::SetTooltip("%s", StatsLines(weapon).c_str());
+                    ShowStatsTooltip(weapon);
                 }
             }
             DrawListRow(ldl, p, rowW, r);
@@ -788,7 +817,7 @@ void DrawDetail(ImDrawList *dl, float x, float w, float bodyTop, float bodyBotto
     const ImVec2 titleSize = Measure(g_fontBold, 28.0f, weapon->name.c_str());
     if (!weapon->stats.empty() &&
         ImGui::IsMouseHoveringRect(ImVec2(left, y), ImVec2(left + std::min(titleSize.x, right - left), y + titleSize.y))) {
-        ImGui::SetTooltip("%s", StatsLines(*weapon).c_str());
+        ShowStatsTooltip(*weapon);
     }
     y += D(46.0f);
 
@@ -1509,8 +1538,8 @@ void DrawMissions(ImDrawList *dl, ImVec2 o, float w, float bodyTop, float bodyBo
             MonoRight(mdl, right - D(150.0f), p.y + (mRowH - Measure(g_fontMono, 14.0f, "0").y) * 0.5f, 14.0f, kSoft, lv);
             PaintText(mdl, nullptr, 14.0f, ImVec2(right - D(130.0f), ty), kMuted, missing[i].cls);
             if (hovered && !weapon.stats.empty() && ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
-                ImGui::SetTooltip("%s\n\nClick to %s the wishlist.", StatsLines(weapon).c_str(),
-                                  weapon.wish ? "remove it from" : "add it to");
+                ShowStatsTooltip(weapon, weapon.wish ? "Click to remove it from the wishlist."
+                                                     : "Click to add it to the wishlist.");
             }
         }
     }

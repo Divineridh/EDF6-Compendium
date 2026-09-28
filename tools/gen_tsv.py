@@ -19,9 +19,36 @@ CATEGORIAS = os.path.join(UI, "build", "categories.json")
 RESPALDO_OBTENIDAS = os.path.join(RAIZ, "build", "obtenidas.txt")
 SALIDA = os.path.join(RAIZ, "build", "weapons.tsv")
 
+WEAPON_TEXT = os.path.join(UI, "extract", "WEAPON", "WEAPON", "WEAPONTEXT.EN.SGO")
+
 sys.path.insert(0, os.path.join(UI, "tools"))
 
 import obtenidas
+from dsgo import Dsgo
+
+WEAPON_LIST_RECORD = 1
+STAT_SEPARATOR = ";"
+FIELD_SEPARATOR = "|"
+
+
+# Every upgradable value in WEAPONTEXT is a 7-number group: base (the value at star 5), stat type,
+# save byte, max level, the two curve coefficients and whether it is fractional. The plugin needs
+# the raw group to compute the value at any star, so it goes into its own column:
+# label|template|group|group;label|template... with the group's numbers comma-separated.
+def star_specs():
+    text = Dsgo(open(WEAPON_TEXT, "rb").read())
+    specs = []
+    for i in text.children(WEAPON_LIST_RECORD):
+        stats = []
+        for stat in text.record(i)[2]:
+            label, template = str(stat[0]), str(stat[1])
+            for part in (label, template):
+                if any(sep in part for sep in (STAT_SEPARATOR, FIELD_SEPARATOR, "\t", "\n")):
+                    raise SystemExit("separator inside a stat text: %r" % part)
+            groups = [",".join("%g" % float(v) for v in group) for group in stat[2:]]
+            stats.append(FIELD_SEPARATOR.join([label, template] + groups))
+        specs.append(STAT_SEPARATOR.join(stats))
+    return specs
 
 ORDEN = ["Ranger", "Wing Diver", "Fencer", "Air Raider"]
 
@@ -69,6 +96,9 @@ def main():
             tengo = {w["name"] for w in catalogo if w["level"] <= 25}
 
     cats = json.load(open(CATEGORIAS, encoding="utf-8"))
+    specs = star_specs()
+    if len(specs) != len(catalogo):
+        raise SystemExit("WEAPONTEXT has %d weapons and the catalog %d" % (len(specs), len(catalogo)))
 
     filas = []
     for clase in ORDEN:
@@ -84,6 +114,7 @@ def main():
                 stats.replace("\t", " ").replace("\n", " "),
                 ",".join(str(u) for u in w["upgrades"]),
                 str(tier(w)),
+                specs[w["index"]],
             ]))
 
     os.makedirs(os.path.dirname(SALIDA), exist_ok=True)
