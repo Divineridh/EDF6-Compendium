@@ -1,10 +1,10 @@
-"""Genera el weapons.tsv que lee el plugin.
+"""Builds the weapons.tsv the plugin reads.
 
-Fuente: el catalogo extraido del cpk por EDF6-UI/tools/weapons.py.
-El estado de obtenidas sale de un obtenidas.txt (ver EDF6-UI/tools/obtenidas.py para
-el orden de busqueda); mientras no exista, se marca por nivel para poder ver los dos
-colores en pantalla. El plugin ya no lo escribe: lee el save solo, y esta columna es
-el respaldo para cuando el save no se puede leer.
+Source: the catalog extracted from the cpk by EDF6-UI/tools/weapons.py.
+The owned state comes from an obtenidas.txt (see EDF6-UI/tools/obtenidas.py for
+the search order); while there's none, weapons are marked by level so both
+colors show up on screen. The plugin no longer writes it: it reads the save by
+itself, and this column is the fallback for when the save can't be read.
 """
 
 import json
@@ -52,12 +52,12 @@ def star_specs():
 
 ORDEN = ["Ranger", "Wing Diver", "Fencer", "Air Raider"]
 
-# Entradas de la WEAPONTABLE que no son armas: son el hueco "sin equipar" de cada
-# clase. Contarlas inflaba los totales y el pool de toda mision de nivel 0.
+# WEAPONTABLE entries that aren't weapons: they are each class's "unequipped"
+# slot. Counting them inflated the totals and the pool of every level-0 mission.
 NO_SON_ARMAS = {"Not Equipped", "No Equipment"}
 
-# Los nombres de categoria salen de las claves internas de CONFIG.SGO, que traen
-# los typos de Sandlot (Weapon_Heavy_Sheild, Weapon_MissleLauncher...).
+# Category names come from CONFIG.SGO's internal keys, which carry Sandlot's
+# typos (Weapon_Heavy_Sheild, Weapon_MissleLauncher...).
 TYPOS_CATEGORIA = {
     "Missle": "Missile",
     "Sheild": "Shield",
@@ -70,11 +70,11 @@ def corregir_categoria(nombre):
     return " ".join(TYPOS_CATEGORIA.get(p, p) for p in nombre.split(" "))
 
 
-# Las cajas de una mision no sortean sobre todo el catalogo: las del juego base
-# solo sueltan armas base, las de DLC1 suman el MissionPack A y las de DLC2 suman
-# tambien el B. Un arma entra al pool si su tier <= el tier de la mision.
-# Contrastado contra 1/probabilidad de la hoja: 745 de 808 filas dan exacto,
-# contra 602 tratando el catalogo como un pool unico.
+# A mission's crates don't roll over the whole catalog: base-game missions only
+# drop base weapons, DLC1 ones add MissionPack A and DLC2 ones add B too. A
+# weapon is in the pool if its tier <= the mission's tier.
+# Checked against the sheet's 1/chance: 745 of 808 rows match exactly, against
+# 602 treating the catalog as a single pool.
 def tier(w):
     ident = str(w["id"]).upper()
     if ident.startswith("MPACK_B"):
@@ -86,7 +86,7 @@ def tier(w):
 
 def main():
     catalogo = json.load(open(CATALOGO, encoding="utf-8"))
-    sin_obtenidas = "--sin-obtenidas" in sys.argv
+    sin_obtenidas = "--no-owned" in sys.argv or "--sin-obtenidas" in sys.argv
     if sin_obtenidas:
         ruta_obtenidas, tengo, placeholder = None, set(), False
     else:
@@ -121,9 +121,9 @@ def main():
     with open(SALIDA, "w", encoding="utf-8", newline="\n") as fh:
         fh.write("\n".join(filas) + "\n")
 
-    print("escrito %s: %d armas" % (SALIDA, len(filas)))
+    print("wrote %s: %d weapons" % (SALIDA, len(filas)))
     if sin_obtenidas:
-        print("  obtenidas: todas en 0 (--sin-obtenidas)")
+        print("  owned: all 0 (--no-owned)")
     else:
         print(obtenidas.informe(ruta_obtenidas, None if placeholder else tengo, RESPALDO_OBTENIDAS))
 

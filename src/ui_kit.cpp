@@ -36,7 +36,7 @@ void LoadFonts() {
     ImGuiIO &io = ImGui::GetIO();
     for (auto &f : fonts) {
         if (GetFileAttributesA(f.path) == INVALID_FILE_ATTRIBUTES) {
-            LogF("ui: no esta %s, uso la fuente por defecto", f.path);
+            LogF("ui: %s is missing, using the default font", f.path);
             continue;
         }
         *f.target = io.Fonts->AddFontFromFileTTF(f.path, 16.0f);

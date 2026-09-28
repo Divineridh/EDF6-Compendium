@@ -1,18 +1,18 @@
 # EDF6 Weapon Compendium
 
-Overlay dentro de Earth Defense Force 6 con las 1560 armas del juego: cuáles tenés, cuáles te
-faltan, dónde farmear cada una y a qué misión conviene ir. Se abre con F1, en el lobby o en misión.
+Overlay inside Earth Defense Force 6 with all 1560 weapons in the game: which ones you have, which
+ones you're missing, where to farm each one and which mission is worth running. F1 opens it, in the
+lobby or in a mission.
 
-Plugin C++ para [EDFModLoader](https://github.com/BlueAmulet/EDFModLoader), con imgui sobre DX11.
+C++ plugin for [EDFModLoader](https://github.com/BlueAmulet/EDFModLoader), with imgui on DX11.
 
-## Compilar
+## Build
 
 ```bash
 build.bat
 ```
 
-Necesita las Build Tools de VS2019 (MSVC 14.29). Las dependencias no están en el repo; se clonan a
-mano dentro de `deps/`:
+Needs the VS2019 Build Tools (MSVC 14.29). Dependencies aren't in the repo; clone them into `deps/`:
 
 ```bash
 git clone https://github.com/ocornut/imgui           deps/imgui
@@ -21,113 +21,118 @@ git clone https://github.com/BlueAmulet/EDFModLoader deps/EDFModLoader
 git clone https://github.com/Quarri6343/EDF6Plugins  deps/EDF6Plugins
 ```
 
-## Empaquetar
+## Package
 
 ```bash
-python tools/paquete.py
+python tools/package.py
 ```
 
-Deja el zip en `../builds/`. Se niega a empaquetar si algún `.cpp` es más nuevo que el DLL, para no
-distribuir un build viejo — que ya pasó una vez.
+Writes the zip to `../builds/`. It refuses to package if any source file is newer than the DLL, so
+a stale build never ships (it happened once).
 
-Para un release público, generar antes el catálogo con `python tools/gen_tsv.py --sin-obtenidas`: la
-columna de obtenidas es el respaldo cuando el save no se puede leer, y sin esa opción se llena con
-las armas de quien arma el paquete.
+For a public release, build the catalog first with `python tools/gen_tsv.py --no-owned`: the owned
+column is the fallback for when the save can't be read, and without that option it's filled with the
+weapons of whoever builds the package.
 
-## Generar los datos
+## Generating the data
 
-El overlay no lee el juego en vivo: consume TSVs generados desde los assets extraídos del `Root.cpk`
-por el toolchain de `EDF6-UI`, que es el que tiene los parsers de SGO/DSGO.
+The overlay doesn't read the game live: it consumes TSVs generated from the assets extracted from
+`Root.cpk` by the `EDF6-UI` toolchain, which has the SGO/DSGO parsers.
 
 ```bash
-python tools/gen_tsv.py       # weapons.tsv, desde EDF6-UI/build/catalog.json
-python tools/gen_strats.py    # strats.tsv, desde data/strats.txt
+python tools/gen_tsv.py       # weapons.tsv, from EDF6-UI/build/catalog.json and WEAPONTEXT
+python tools/gen_strats.py    # strats.tsv, from data/strats.txt
 ```
 
-`data/missions.tsv` ya está en el repo, así que no hay tercer comando. Sale del [Equipment Farming
-Tool de Beardmo](https://docs.google.com/spreadsheets/d/17KuXJJOhsRqB0Fi82DLdd0p5hU79Z_OcLRGp8_xTF1A), que no se
-redistribuye acá. Para rehacer la tabla, bajala como `.xlsx` a `data/finder.xlsx` y corré:
+`data/missions.tsv` is already in the repo, so there's no third command. It comes from [Beardmo's
+Equipment Farming Tool](https://docs.google.com/spreadsheets/d/17KuXJJOhsRqB0Fi82DLdd0p5hU79Z_OcLRGp8_xTF1A),
+which isn't redistributed here. To rebuild the table, download it as `.xlsx` to `data/finder.xlsx`
+and run:
 
 ```bash
 python tools/gen_missions.py
 ```
 
-Ojo que la tabla **no es una copia** de la planilla: su columna de Inferno lista misiones donde
-el arma no puede caer, y `gen_missions.py` lo corrige calibrando contra el tamaño del pool. El
-porqué está en el docstring del script.
+Note that the table **is not a copy** of the spreadsheet: its Inferno column lists missions where the
+weapon can't drop, and `gen_missions.py` fixes that by calibrating against the pool size. The why is
+in the script's docstring.
 
-## Lo que costó averiguar
+## What took figuring out
 
-**El save está cifrado con AES-256-CTR**, clave e IV derivados del nombre del archivo:
+**The save is encrypted with AES-256-CTR**, with key and IV derived from the file name:
 
-    clave = MD5(utf16le("edf6MAIN.GST.sav")) + "Edf5.*_Steam_Ver"
-    iv    = MD5(utf16le("edf6MAIN.GST.stm"))
+    key = MD5(utf16le("edf6MAIN.GST.sav")) + "Edf5.*_Steam_Ver"
+    iv  = MD5(utf16le("edf6MAIN.GST.stm"))
 
-El texto plano arranca con el magic `MDB`. Algoritmo de Quarri6343, publicado en el EDFSaveEditor de
-FevGrave. Implementado acá en `src/savedata.cpp` con Windows CNG, y en `tools/aes.py` para las
-herramientas. La carpeta del save es `EarthDefen`**c**`eForce6`, con C: buscar "DEFENSE" no la
-encuentra.
+The plaintext starts with the magic `MDB`. Algorithm by Quarri6343, published in FevGrave's
+EDFSaveEditor. Implemented here in `src/savedata.cpp` with Windows CNG, and in `tools/aes.py` for the
+tools. The save folder is `EarthDefen`**c**`eForce6`, with a C: searching for "DEFENSE" misses it.
 
-**Tabla de armas obtenidas: offset `0x7CFC`, 2048 entradas de 12 bytes**, indexadas igual que
-WEAPONTABLE. Los primeros 4 bytes en cero significan "no la tenés"; los 8 siguientes son el nivel de
-mejora de cada stat. El escaneo de memoria previo había fallado por probar pasos de 1, 2, 4, 8, 16,
-20, 24 y 32 salteando justo el 12.
+**Owned weapons table: offset `0x7CFC`, 2048 entries of 12 bytes**, indexed like WEAPONTABLE. The
+first 4 bytes at zero mean "you don't have it"; the next 8 are each stat's upgrade level. An earlier
+memory scan had failed because it tried strides of 1, 2, 4, 8, 16, 20, 24 and 32, skipping exactly 12.
 
-**Las cajas no sortean sobre todo el catálogo.** Las misiones del juego base solo sueltan armas base,
-las de DLC1 suman el MissionPack A y las de DLC2 también el B. Cada arma y cada misión llevan un
-`tier` y entra al pool si `tier_arma <= tier_misión`. Contrastado contra `1/probabilidad` de la
-planilla: 745 de 808 filas dan exacto, contra 602 tratando el catálogo como un pool único.
+**Crates don't roll over the whole catalog.** Base-game missions only drop base weapons, DLC1 ones
+add MissionPack A and DLC2 ones B too. Each weapon and each mission carry a `tier`, and a weapon is in
+the pool if `weapon_tier <= mission_tier`. Checked against the sheet's `1/chance`: 745 of 808 rows
+match exactly, against 602 treating the catalog as a single pool.
 
-**El overlay de Steam rompía el hook de `Present`.** `GameOverlayRenderer64.dll` lo parchea *inline*,
-y MinHook también: uno de los dos quedaba huérfano y `hkPresent` dejaba de llamarse tras los primeros
-frames. Por eso se enganchan **los slots de la vtable del swapchain** (8 Present, 13 ResizeBuffers,
-22 Present1) escribiendo el puntero con `VirtualProtect`, en vez de parchear el cuerpo. Así los dos
-hooks se encadenan. MinHook quedó solo para las funciones de user32 del bloqueo de input.
+**Stats scale with stars, and the listed value is star 5.** Every upgradable value in WEAPONTEXT is a
+group of 7 numbers: base (the value at star 5), stat type, save byte, max level, two curve
+coefficients and whether it's fractional. The game computes
+`base * (1 ± a * ((star / 5)^b - 1))`, with minus for types that improve by going down (times,
+spread, energy cost, fire intervals, which are stored in frames), rounding whole-number stats; a
+stat capped below star 5 has its levels shifted to end at star 5. Fitted to in-game values of six
+weapons, all matching to the shown decimal (`src/weapon_stats.cpp`).
 
-**La tecla se busca por tres caminos a la vez**, porque según la máquina falla cualquiera:
-`GetAsyncKeyState`, el `WM_KEYDOWN` del WndProc, y leer la tecla del array que el propio juego le
-pide a `GetKeyboardState` — esos hooks ya existían para mutearle el input al juego. Se descartó
-`WH_KEYBOARD_LL` porque los antivirus lo leen como keylogger. `sondeo=0` en `config.ini` apaga el
-primero y sirve para comprobar que los de respaldo andan.
+**The Steam overlay broke the `Present` hook.** `GameOverlayRenderer64.dll` patches it *inline*, and
+MinHook did too: one of the two ended up orphaned and `hkPresent` stopped being called after the
+first frames. So **the swapchain's vtable slots** are hooked instead (8 Present, 13 ResizeBuffers,
+22 Present1), writing the pointer with `VirtualProtect` instead of patching the body. That way both
+hooks chain. MinHook is only left for the user32 functions of the input block.
 
-**El filtro de foco no funciona con EDF6** y viene apagado: `GetForegroundWindow()` nunca devuelve la
-ventana del juego, comprobado en dos máquinas distintas.
+**The key is looked for through three paths at once**, because any of them fails depending on the
+machine: `GetAsyncKeyState`, the WndProc's `WM_KEYDOWN`, and reading the key from the array the game
+itself asks `GetKeyboardState` for (those hooks already existed to mute the game's input).
+`WH_KEYBOARD_LL` was ruled out because antivirus software reads it as a keylogger. `poll=0` in
+`config.ini` turns off the first one, to check that the fallback ones work.
 
-## Módulos
+**The focus filter doesn't work with EDF6** and comes off: `GetForegroundWindow()` never returns the
+game's window, checked on two different machines.
 
-Otras DLLs pueden colgarse del overlay sin engancharse ellas mismas a Present ni al input, que es
-lo que costó estabilizar. El contrato está en `src/edf6_overlay_api.h` (versión 3, C puro):
+## Modules
 
-- la DLL del módulo busca `EDF6Compendium.dll` y llama a su export `Edf6Overlay_Register` con un
-  `Edf6OverlayModule` (nombre, tecla, `onToggle`, `wantsDraw`, `draw` y, desde la 3, `panel`);
-- el Compendium detecta la tecla por los mismos tres caminos que F1 y llama a `onToggle`;
-- en cada frame, si `wantsDraw` da distinto de cero, llama a `draw` con un `Edf6OverlayHost`:
-  rectángulos, texto con las fuentes de los paneles y espaciado entre letras (desde la 2), tamaño de
-  pantalla, escala y el log. Lo que dibuja va al fondo, debajo de los paneles.
+Other DLLs can hang off the overlay without hooking Present or the input themselves, which is what
+took stabilizing. The contract is in `src/edf6_overlay_api.h` (version 3, plain C):
 
-**Paneles (versión 3).** Un módulo con `panel` tiene una ventana propia, como el Compendium: su
-tecla la abre y la cierra, hay un solo panel abierto a la vez y, mientras está abierto, el
-Compendium le bloquea el input al juego. `panel` corre adentro del frame de imgui del Compendium, y
-el módulo dibuja con imgui sobre el contexto del anfitrión (`imguiContext`, `imguiAllocators`,
-`imguiFont`). Compartir imgui entre DLLs exige la misma versión y el mismo layout de sus
-estructuras: el módulo declara `IMGUI_VERSION_NUM` y `EDF6_IMGUI_LAYOUT`, y si no coinciden con los
-del Compendium no se registra y lo dice en el log, en vez de crashear. En la práctica, compilar el
-módulo contra el mismo commit de `deps/imgui`.
+- the module's DLL looks for `EDF6Compendium.dll` and calls its `Edf6Overlay_Register` export with an
+  `Edf6OverlayModule` (name, key, `onToggle`, `wantsDraw`, `draw` and, since 3, `panel`);
+- the Compendium detects the key through the same three paths as F1 and calls `onToggle`;
+- every frame, if `wantsDraw` returns non-zero, it calls `draw` with an `Edf6OverlayHost`: rectangles,
+  text with the panel fonts and letter spacing (since 2), screen size, scale and the log. What it
+  draws goes to the background, under the panels.
 
-La versión 3 también presta el catálogo: `weaponCount` y `weapon` dan nombre, clase, categoría,
-nivel y si la tenés o la tenés al máximo, desde cualquier hilo.
+**Panels (version 3).** A module with `panel` gets a window of its own, like the Compendium: its key
+opens and closes it, only one panel is open at a time and, while it's open, the Compendium blocks the
+game's input. `panel` runs inside the Compendium's imgui frame, and the module draws with imgui on the
+host's context (`imguiContext`, `imguiAllocators`, `imguiFont`). Sharing imgui across DLLs requires
+the same version and struct layout: the module declares `IMGUI_VERSION_NUM` and `EDF6_IMGUI_LAYOUT`,
+and if they don't match the Compendium's it isn't registered and the log says so, instead of
+crashing. In practice, build the module against the same `deps/imgui` commit.
 
-La estructura del anfitrión solo crece al final, así que el Compendium acepta módulos de cualquier
-versión hasta la suya; un módulo que pide la versión N necesita un Compendium con la N o más nueva.
-Entran hasta 8 módulos:
+Version 3 also shares the catalog: `weaponCount` and `weapon` give name, class, category, level and
+whether you have it or have it maxed, from any thread.
 
-- [EDF6-EnemyHp](https://github.com/Divineridh/EDF6-EnemyHp): la vida de los enemigos que golpeás.
-- [EDF6-Loadouts](https://github.com/Divineridh/EDF6-Loadouts): el panel de loadouts (F2), que vivía
-  adentro del Compendium hasta la 0.3.0.
+The host struct only grows at the end, so the Compendium accepts modules of any version up to its
+own; a module asking for version N needs a Compendium with N or newer. Up to 8 modules fit:
 
-## Diagnóstico
+- [EDF6-EnemyHp](https://github.com/Divineridh/EDF6-EnemyHp): HP of the enemies you hit.
+- [EDF6-Loadouts](https://github.com/Divineridh/EDF6-Loadouts): the loadouts panel (F2), which lived
+  inside the Compendium up to 0.3.0.
 
-El plugin escribe `Compendium.log` al lado del `EDF6.exe`. La primera línea trae la fecha del build,
-y el arranque de la tecla va numerado por etapas — `0.` sondeando (con cuántos frames se dibujaron),
-`0b.` el teclado responde, `1.` tecla detectada y por cuál camino, `2.` overlay abierto, `3.` primer
-frame dibujado. El número de la última etapa que aparezca dice dónde se corta.
+## Diagnostics
+
+The plugin writes `Compendium.log` next to `EDF6.exe`. The first line has the build date, and the key
+startup is numbered in stages: `0.` polling (with how many frames were drawn), `0b.` the keyboard
+responds, `1.` key detected and through which path, `2.` overlay open, `3.` first frame drawn. The
+number of the last stage that shows up tells where it stops.

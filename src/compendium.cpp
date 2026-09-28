@@ -13,7 +13,7 @@
 
 static Catalog g_catalog;
 
-// Ruta relativa al ejecutable del juego, no al directorio actual.
+// Path relative to the game's executable, not to the current directory.
 std::string GamePath(const char *rel) {
     char path[MAX_PATH];
     GetModuleFileNameA(nullptr, path, MAX_PATH);
@@ -57,12 +57,12 @@ static ClassData &ClasePorNombre(const std::string &nombre) {
     return g_catalog.classes.back();
 }
 
-// index | clase | catId | catNombre | nivel | nombre | obtenida | stats (tabs)
+// index | class | category id | category name | level | name | owned | stats (tab separated)
 void LoadCatalog() {
     const std::string ruta = GamePath("Mods\\Compendium\\weapons.tsv");
     std::ifstream in(ruta);
     if (!in) {
-        LogF("no encontre %s", ruta.c_str());
+        LogF("couldn't find %s", ruta.c_str());
         return;
     }
 
@@ -107,7 +107,7 @@ void LoadCatalog() {
         ClasePorNombre(clase).weapons.push_back(w);
         n++;
     }
-    LogF("catalogo cargado: %d armas en %d clases", n, (int)g_catalog.classes.size());
+    LogF("catalog loaded: %d weapons in %d classes", n, (int)g_catalog.classes.size());
 }
 
 Catalog &MutableCatalog() {
@@ -139,7 +139,7 @@ int EnWishlist() {
     return n;
 }
 
-// indice | nombre. El nombre va solo para poder leer el archivo a ojo.
+// index | name. The name is only there so the file can be read by eye.
 void LoadWishlist() {
     g_wishPath = GamePath("Mods\\Compendium\\wishlist.txt");
     std::ifstream in(g_wishPath);
@@ -158,14 +158,14 @@ void LoadWishlist() {
             n++;
         }
     }
-    LogF("wishlist: %d armas marcadas", n);
+    LogF("wishlist: %d weapons marked", n);
 }
 
 bool SaveWishlist() {
     g_wishPath = GamePath("Mods\\Compendium\\wishlist.txt");
     std::ofstream out(g_wishPath);
     if (!out) {
-        LogF("no pude escribir %s", g_wishPath.c_str());
+        LogF("couldn't write %s", g_wishPath.c_str());
         return false;
     }
     for (const ClassData &c : g_catalog.classes) {
@@ -189,8 +189,8 @@ static void Recortar(std::string &s) {
     }
 }
 
-// Valor de una clave de Mods\Compendium\config.ini, buscando los dos nombres
-// (castellano e ingles). Cadena vacia si el archivo o la clave no estan.
+// Value of a key in Mods\Compendium\config.ini, trying both names (Spanish and
+// English). Empty string if the file or the key isn't there.
 static std::string ValorDeConfig(const char *clave, const char *alias) {
     std::ifstream in(GamePath("Mods\\Compendium\\config.ini"));
     if (!in) {
@@ -213,9 +213,9 @@ static std::string ValorDeConfig(const char *clave, const char *alias) {
     return std::string();
 }
 
-// Tecla del overlay. Si algo mas se queda con F1 —el overlay de la placa de
-// video, por ejemplo— se cambia sin recompilar poniendo en
-// Mods\Compendium\config.ini una linea "tecla=0x71" con el codigo virtual.
+// Overlay key. If something else takes F1 (the graphics card overlay, for
+// example), it can be changed without recompiling with a "key=0x71" line in
+// Mods\Compendium\config.ini holding the virtual-key code.
 static int LeerTecla(const char *clave, const char *alias, int porDefecto, const char *uso) {
     int tecla = porDefecto;
     const std::string valor = ValorDeConfig(clave, alias);
@@ -225,8 +225,8 @@ static int LeerTecla(const char *clave, const char *alias, int porDefecto, const
             tecla = v;
         }
     }
-    LogF("tecla de %s: 0x%02X (%s)", uso, tecla,
-         valor.empty() ? "por defecto, config.ini ausente o sin la clave" : "leida de config.ini");
+    LogF("%s key: 0x%02X (%s)", uso, tecla,
+         valor.empty() ? "default, config.ini missing or without the setting" : "read from config.ini");
     return tecla;
 }
 
@@ -235,10 +235,10 @@ int TeclaToggle() {
     return tecla;
 }
 
-// El filtro de foco evita que la tecla dispare mientras estas en otra
-// aplicacion, pero depende de que GetForegroundWindow devuelva una ventana de
-// este proceso, y hay maquinas donde eso no pasa nunca. Ademas de apagarse solo
-// cuando lo detecta, se puede forzar con "foco=0".
+// The focus filter keeps the key from firing while you are in another
+// application, but it depends on GetForegroundWindow returning a window of this
+// process, and on some machines that never happens. Besides turning itself off
+// when it detects that, it can be forced off with "focus=0".
 bool FiltroDeFoco() {
     static int estado = -1;
     if (estado >= 0) {
@@ -248,7 +248,7 @@ bool FiltroDeFoco() {
     const std::string valor = ValorDeConfig("foco", "focus");
     if (valor == "1" || valor == "si" || valor == "on" || valor == "true" || valor == "yes") {
         estado = 1;
-        Log("filtro de foco encendido por config.ini");
+        Log("focus filter turned on by config.ini");
     }
     return estado != 0;
 }
@@ -262,8 +262,8 @@ bool SondeoDirecto() {
     const std::string valor = ValorDeConfig("sondeo", "poll");
     if (valor == "0" || valor == "no" || valor == "off" || valor == "false") {
         estado = 0;
-        Log("sondeo directo apagado por config.ini: la tecla tiene que entrar "
-            "por el mensaje de ventana o por la lectura del juego");
+        Log("direct polling turned off by config.ini: the key has to come in "
+            "through the window message or the game's own read");
     }
     return estado != 0;
 }
@@ -274,12 +274,12 @@ const std::vector<Drop> &GetDrops() {
     return g_drops;
 }
 
-// dificultad | mision | nombre | nivelMin | nivelMax | probabilidad (separados por tab)
+// difficulty | mission | name | min level | max level | chance (tab separated)
 void LoadDrops() {
     const std::string ruta = GamePath("Mods\\Compendium\\missions.tsv");
     std::ifstream in(ruta);
     if (!in) {
-        LogF("no encontre %s", ruta.c_str());
+        LogF("couldn't find %s", ruta.c_str());
         return;
     }
     std::string linea;
@@ -304,7 +304,7 @@ void LoadDrops() {
         }
         g_drops.push_back(d);
     }
-    LogF("tabla de dropeo: %d combinaciones mision/dificultad", (int)g_drops.size());
+    LogF("drop table: %d mission/difficulty combinations", (int)g_drops.size());
 }
 
 void MarcarFarmeables() {
@@ -323,7 +323,7 @@ void MarcarFarmeables() {
             }
         }
     }
-    LogF("armas que ninguna caja suelta: %d (premio de mision o DLC)", sin);
+    LogF("weapons no crate drops: %d (mission rewards or DLC)", sin);
 }
 
 static std::vector<Strat> g_strats;
@@ -332,13 +332,13 @@ const std::vector<Strat> &GetStrats() {
     return g_strats;
 }
 
-// mision | dificultad | clase | titulo | fuente | cuerpo (separados por tab)
-// El cuerpo trae los saltos de linea escapados como \n literal.
+// mission | difficulty | class | title | source | body (tab separated)
+// Line breaks in the body are escaped as a literal \n.
 void LoadStrats() {
     const std::string ruta = GamePath("Mods\\Compendium\\strats.tsv");
     std::ifstream in(ruta);
     if (!in) {
-        LogF("sin estrategias: no encontre %s", ruta.c_str());
+        LogF("no strategies: couldn't find %s", ruta.c_str());
         return;
     }
     std::string linea;
@@ -372,8 +372,8 @@ static DWORD WINAPI MainThread(LPVOID) {
     LoadCatalog();
     LoadDrops();
     LoadStrats();
-    // Si el save se puede leer, manda el: tiene el estado real y ademas incluye
-    // armas que la pantalla de equipamiento oculta por el limite de nivel.
+    // If the save can be read, it wins: it has the real state and also includes
+    // weapons the equipment screen hides because of the level cap.
     TeclaToggle();
     FiltroDeFoco();
     SondeoDirecto();
@@ -389,10 +389,10 @@ extern "C" BOOL __declspec(dllexport) EML6_Load(PluginInfo *pluginInfo) {
     pluginInfo->infoVersion = PluginInfo::MaxInfoVer;
     pluginInfo->name = "Weapon Compendium";
     pluginInfo->version = PLUG_VER(0, 5, 0, 0);
-    LogF("EML6_Load llamado por el loader (build %s %s)", __DATE__, __TIME__);
+    LogF("EML6_Load called by the loader (build %s %s)", __DATE__, __TIME__);
     static bool arrancado = false;
     if (arrancado) {
-        Log("ya estaba arrancado: ignoro esta segunda carga");
+        Log("already started: ignoring this second load");
         return TRUE;
     }
     arrancado = true;

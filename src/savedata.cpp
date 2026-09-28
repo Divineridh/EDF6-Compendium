@@ -1,21 +1,21 @@
-// Lee las armas obtenidas directamente del save del juego.
+// Reads the owned weapons straight from the game's save.
 //
-// MAIN.GST esta cifrado con AES-256-CTR. La clave y el IV salen del nombre del
-// archivo:
-//     clave = MD5(utf16le("edf6MAIN.GST.sav")) + "Edf5.*_Steam_Ver"
-//     iv    = MD5(utf16le("edf6MAIN.GST.stm"))
-// El texto plano arranca con el magic "MDB".
+// MAIN.GST is encrypted with AES-256-CTR. The key and IV come from the file
+// name:
+//     key = MD5(utf16le("edf6MAIN.GST.sav")) + "Edf5.*_Steam_Ver"
+//     iv  = MD5(utf16le("edf6MAIN.GST.stm"))
+// The plaintext starts with the magic "MDB".
 //
-// Algoritmo publicado en EDFDecrypt.cpp del EDFSaveEditor de FevGrave, con
-// credito a Quarri6343 por descubrirlo.
+// Algorithm published in EDFDecrypt.cpp of FevGrave's EDFSaveEditor, with
+// credit to Quarri6343 for discovering it.
 //
-// Adentro, en 0x7CFC, hay una tabla de 2048 entradas de 12 bytes indexada igual
-// que WEAPONTABLE. Una entrada en cero es un arma que no tenes; cualquier cosa
-// distinta de cero significa obtenida.
+// Inside, at 0x7CFC, there's a table of 2048 entries of 12 bytes indexed like
+// WEAPONTABLE. An all-zero entry is a weapon you don't have; anything else means
+// owned.
 //
-// Ojo: el save marca mas armas de las que muestra la pantalla de equipamiento,
-// porque esa pantalla ademas filtra por el limite de nivel todavia no
-// desbloqueado. El save es la fuente correcta.
+// Careful: the save marks more weapons than the equipment screen shows, because
+// that screen also filters by the level cap you haven't unlocked yet. The save
+// is the right source.
 
 #include <windows.h>
 #include <bcrypt.h>
@@ -48,8 +48,8 @@ static bool Md5(const void *datos, size_t largo, unsigned char salida[16]) {
     return ok;
 }
 
-// CTR no usa el descifrado de bloque: cifra el contador y hace XOR. Por eso
-// alcanza con AES en modo ECB, que es lo que expone CNG.
+// CTR doesn't use block decryption: it encrypts the counter and XORs. So AES in
+// ECB mode, which is what CNG exposes, is enough.
 static bool AesCtr(std::vector<unsigned char> &datos, const unsigned char key[32],
                    const unsigned char iv[16]) {
     BCRYPT_ALG_HANDLE alg = nullptr;
@@ -87,11 +87,11 @@ static bool AesCtr(std::vector<unsigned char> &datos, const unsigned char key[32
     return ok;
 }
 
-// ------------------------------------------------------------- ubicacion
+// ------------------------------------------------------------- location
 
-// La carpeta es "EarthDefenceForce6", con C: buscar "Defense" no la encuentra.
-// Adentro hay una carpeta por steamid y varios slots, asi que se elige el
-// MAIN.GST modificado mas recientemente.
+// The folder is "EarthDefenceForce6", with a C: searching for "Defense" misses it.
+// Inside there's a folder per steamid and several slots, so the most recently
+// modified MAIN.GST is picked.
 static bool BuscarSave(std::string &rutaFinal, FILETIME &escrituraFinal) {
     char base[MAX_PATH];
     if (!GetEnvironmentVariableA("LOCALAPPDATA", base, MAX_PATH)) {
@@ -176,19 +176,19 @@ bool LeerObtenidasDelSave() {
     std::string ruta;
     FILETIME escritura = {0, 0};
     if (!BuscarSave(ruta, escritura)) {
-        Log("no encontre ningun MAIN.GST");
+        Log("couldn't find any MAIN.GST");
         return false;
     }
 
     HANDLE h = CreateFileA(ruta.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
                            OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (h == INVALID_HANDLE_VALUE) {
-        LogF("no pude abrir %s", ruta.c_str());
+        LogF("couldn't open %s", ruta.c_str());
         return false;
     }
     const DWORD largo = GetFileSize(h, nullptr);
     if (largo == INVALID_FILE_SIZE || largo < TABLA || largo > (64u << 20)) {
-        LogF("tamano de save fuera de rango: %lu", largo);
+        LogF("save size out of range: %lu", largo);
         CloseHandle(h);
         return false;
     }
@@ -197,7 +197,7 @@ bool LeerObtenidasDelSave() {
     const BOOL bien = ReadFile(h, datos.data(), largo, &leidos, nullptr);
     CloseHandle(h);
     if (!bien || leidos != largo) {
-        Log("no pude leer el save entero");
+        Log("couldn't read the whole save");
         return false;
     }
 
@@ -207,27 +207,27 @@ bool LeerObtenidasDelSave() {
     unsigned char iv[16];
     if (!Md5(nombreClave, wcslen(nombreClave) * sizeof(wchar_t), key) ||
         !Md5(nombreIv, wcslen(nombreIv) * sizeof(wchar_t), iv)) {
-        Log("fallo el MD5");
+        Log("MD5 failed");
         return false;
     }
     memcpy(key + 16, "Edf5.*_Steam_Ver", 16);
 
     if (!AesCtr(datos, key, iv)) {
-        Log("fallo el descifrado AES");
+        Log("AES decryption failed");
         return false;
     }
     if (datos.size() < 3 || memcmp(datos.data(), "MDB", 3) != 0) {
-        Log("el save no descifro bien: falta el magic MDB");
+        Log("the save didn't decrypt: the MDB magic is missing");
         return false;
     }
     if (datos.size() <= TABLA) {
-        Log("el save es mas chico que la tabla de armas");
+        Log("the save is smaller than the weapon table");
         return false;
     }
 
-    // La tabla son 2048 entradas fijas. Derivar el tope del tamano del archivo
-    // funciona hoy porque la tabla termina justo al final, pero un parche que
-    // agregue datos atras haria leer basura como armas obtenidas.
+    // The table is 2048 fixed entries. Deriving the count from the file size
+    // works today because the table ends right at the end of the file, but a
+    // patch that appends data would read garbage as owned weapons.
     size_t entradas = (datos.size() - TABLA) / PASO;
     if (entradas > 2048) {
         entradas = 2048;
@@ -251,7 +251,7 @@ bool LeerObtenidasDelSave() {
                 g_recien.push_back(w.index);
             }
 
-            // Los 8 bytes que siguen son el nivel de mejora de cada stat.
+            // The next 8 bytes are the upgrade level of each stat.
             w.upgradeNow.assign(entrada + 4, entrada + PASO);
             w.starred = w.owned && !w.upgradeMax.empty();
             for (size_t i = 0; i < w.upgradeMax.size(); i++) {
@@ -267,10 +267,10 @@ bool LeerObtenidasDelSave() {
     g_escrituraSave = escritura;
     g_marcadasSave = marcadas;
     if (!g_recien.empty()) {
-        LogF("nuevas desde la ultima lectura: %d", (int)g_recien.size());
+        LogF("new since the last read: %d", (int)g_recien.size());
     }
     g_primeraLectura = false;
     g_leidoEn = GetTickCount64();
-    LogF("save leido: %d armas obtenidas de %s", marcadas, ruta.c_str());
+    LogF("save read: %d owned weapons from %s", marcadas, ruta.c_str());
     return true;
 }

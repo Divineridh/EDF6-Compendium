@@ -1,4 +1,4 @@
-"""Lector minimo de xlsx: sharedStrings + celdas, sin dependencias."""
+"""Minimal xlsx reader: sharedStrings + cells, no dependencies."""
 
 import re
 import sys
@@ -65,6 +65,6 @@ if __name__ == "__main__":
     for nombre, filas in hojas.items():
         if objetivo and objetivo.lower() not in nombre.lower():
             continue
-        print("=== %s: %d filas ===" % (nombre, len(filas)))
+        print("=== %s: %d rows ===" % (nombre, len(filas)))
         for f in filas[:int(sys.argv[3]) if len(sys.argv) > 3 else 6]:
             print("  ", f[:14])

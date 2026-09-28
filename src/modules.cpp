@@ -219,13 +219,13 @@ extern "C" __declspec(dllexport) int Edf6Overlay_Register(const Edf6OverlayModul
         return 0;
     }
     if (module->version < 1 || module->version > EDF6_OVERLAY_API_VERSION) {
-        LogF("modulos: %s pide la API %d y el Compendium llega hasta la %d; no lo registro",
+        LogF("modules: %s asks for API %d and the Compendium goes up to %d; not registered",
              module->name ? module->name : "?", module->version, EDF6_OVERLAY_API_VERSION);
         return 0;
     }
     if (HasPanel(module) &&
         (module->imguiVersion != IMGUI_VERSION_NUM || module->imguiLayout != EDF6_IMGUI_LAYOUT)) {
-        LogF("modulos: %s was built with imgui %d (layout %08X) and the Compendium with %d (layout %08X); "
+        LogF("modules: %s was built with imgui %d (layout %08X) and the Compendium with %d (layout %08X); "
              "not registered",
              module->name ? module->name : "?", module->imguiVersion, module->imguiLayout, IMGUI_VERSION_NUM,
              EDF6_IMGUI_LAYOUT);
@@ -234,13 +234,13 @@ extern "C" __declspec(dllexport) int Edf6Overlay_Register(const Edf6OverlayModul
     std::lock_guard<std::mutex> lock(g_registerMutex);
     const int count = g_count.load(std::memory_order_relaxed);
     if (count >= kMaxModules) {
-        LogF("modulos: sin lugar para %s", module->name ? module->name : "?");
+        LogF("modules: no room for %s", module->name ? module->name : "?");
         return 0;
     }
     g_modules[count] = module;
     g_count.store(count + 1, std::memory_order_release);
     *host = &g_host;
-    LogF("modulos: registrado %s (API %d), tecla 0x%02X%s", module->name ? module->name : "?", module->version,
-         module->toggleKey, HasPanel(module) ? ", con panel" : "");
+    LogF("modules: registered %s (API %d), key 0x%02X%s", module->name ? module->name : "?", module->version,
+         module->toggleKey, HasPanel(module) ? ", with a panel" : "");
     return 1;
 }

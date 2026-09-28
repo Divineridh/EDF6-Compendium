@@ -1,8 +1,8 @@
-"""Convierte data/strats.txt al TSV que lee el plugin.
+"""Converts data/strats.txt to the TSV the plugin reads.
 
-El archivo fuente esta en bloques legibles para que cualquiera pueda agregar
-estrategias sin tocar codigo; aca se aplanan a una linea por estrategia, con los
-saltos de linea escapados como \\n.
+The source file is in readable blocks so anyone can add strategies without
+touching code; here they are flattened to one line per strategy, with line
+breaks escaped as \\n.
 """
 
 import os
@@ -14,8 +14,8 @@ SALIDA = os.path.join(RAIZ, "build", "strats.tsv")
 
 CAMPOS = ("mision", "dificultad", "clase", "fuente")
 
-# El archivo fuente esta en ingles porque viaja con el mod; se aceptan las dos
-# variantes para no romper bloques viejos.
+# The source file is in English because it ships with the mod; both spellings
+# of each field are accepted so old blocks don't break.
 ALIAS = {
     "mission": "mision", "mision": "mision",
     "difficulty": "dificultad", "dificultad": "dificultad",
@@ -75,9 +75,9 @@ def main():
     os.makedirs(os.path.dirname(SALIDA), exist_ok=True)
     with open(SALIDA, "w", encoding="utf-8", newline="\n") as fh:
         fh.write("\n".join(filas) + "\n")
-    print("%s: %d estrategias" % (SALIDA, len(filas)))
+    print("%s: %d strategies" % (SALIDA, len(filas)))
     for e in entradas:
-        print("  [mision %-4s] %s" % (e["mision"], e["titulo"][:56]))
+        print("  [mission %-4s] %s" % (e["mision"], e["titulo"][:56]))
 
 
 if __name__ == "__main__":

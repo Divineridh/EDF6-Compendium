@@ -1,10 +1,10 @@
-"""AES-256 minimo, solo lo necesario para modo CTR.
+"""Minimal AES-256, just what CTR mode needs.
 
-CTR nunca invoca el descifrado de bloque: cifra el contador y hace XOR contra el
-dato. Asi que alcanza con la mitad del algoritmo.
+CTR never calls block decryption: it encrypts the counter and XORs it with the
+data. So half the algorithm is enough.
 
-Sin dependencias a proposito: el entorno no tiene pycryptodome y para 56 KB de
-save no vale la pena instalar nada.
+Dependency-free on purpose: the environment has no pycryptodome, and a 56 KB
+save isn't worth installing anything.
 """
 
 SBOX = [
@@ -47,7 +47,7 @@ def mul(a, b):
 
 
 def expand_key(key):
-    nk = len(key) // 4          # 8 para AES-256
+    nk = len(key) // 4          # 8 for AES-256
     nr = nk + 6                 # 14 rondas
     w = [list(key[4 * i:4 * i + 4]) for i in range(nk)]
     for i in range(nk, 4 * (nr + 1)):
@@ -63,7 +63,7 @@ def expand_key(key):
 
 
 def encrypt_block(bloque, w, nr):
-    s = [list(bloque[i::4]) for i in range(4)]  # estado por filas
+    s = [list(bloque[i::4]) for i in range(4)]  # state by rows
 
     def add_round_key(ronda):
         for c in range(4):
@@ -95,7 +95,7 @@ def encrypt_block(bloque, w, nr):
 
 
 def ctr_xor(datos, key, iv):
-    """CTR: el IV es el bloque contador inicial y se incrementa como entero big-endian."""
+    """CTR: the IV is the initial counter block, incremented as a big-endian integer."""
     w, nr = expand_key(key)
     contador = int.from_bytes(iv, "big")
     salida = bytearray(len(datos))
