@@ -9,6 +9,7 @@
 
 #include "compendium.h"
 #include "modules.h"
+#include "weapon_stats.h"
 
 static Catalog g_catalog;
 
@@ -80,11 +81,13 @@ void LoadCatalog() {
         }
         std::getline(ss, obtenida, '\t');
         std::getline(ss, stats, '\t');
-        std::string topes, tier;
+        std::string topes, tier, specs;
         std::getline(ss, topes, '\t');
         std::getline(ss, tier, '\t');
+        std::getline(ss, specs, '\t');
 
         Weapon w;
+        w.statSpecs = ParseStatSpecs(specs);
         for (size_t i = 0, j = 0; i <= topes.size(); i++) {
             if (i == topes.size() || topes[i] == ',') {
                 if (i > j) {

@@ -5,8 +5,28 @@
 #include <string>
 #include <vector>
 
+// One upgradable number of a stat, as WEAPONTEXT stores it: base is the value at star 5.
+struct StarValue {
+    float base = 0.0f;
+    int type = 0;
+    int upgrade = 0;
+    int maxLevel = 0;
+    float a = 0.0f;
+    float b = 0.0f;
+    bool fractional = true;
+};
+
+// A stat line: format uses $0, $1... for its values. A stat without values ("Zoom", "----")
+// is shown as its format.
+struct StatSpec {
+    std::string label;
+    std::string format;
+    std::vector<StarValue> values;
+};
+
 struct Weapon {
     int index = 0;
+    std::vector<StatSpec> statSpecs;
     std::string name;
     std::string categoryName;
     std::string stats;
